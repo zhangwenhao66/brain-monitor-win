@@ -3,9 +3,9 @@ using System.Windows.Controls;
 
 namespace BrainMonitor.Views
 {
-    public partial class TesterInfoWindow : Window
+    public partial class TesterInfoPage : UserControl
     {
-        public TesterInfoWindow()
+        public TesterInfoPage()
         {
             InitializeComponent();
         }
@@ -59,15 +59,14 @@ namespace BrainMonitor.Views
             // 将新测试者信息添加到当前登录医护人员的测试者列表
             GlobalTesterList.AddTesterForCurrentStaff(newTester);
 
-            // 设置对话框结果为成功并关闭窗口
-            this.DialogResult = true;
-            this.Close();
+            // 返回到医护人员操作页面
+            NavigationManager.NavigateTo(new MedicalStaffPage());
         }
 
         private void ReturnButton_Click(object sender, RoutedEventArgs e)
         {
-            // 直接关闭弹窗
-            this.Close();
+            // 返回到医护人员操作页面
+            NavigationManager.NavigateTo(new MedicalStaffPage());
         }
     }
 }

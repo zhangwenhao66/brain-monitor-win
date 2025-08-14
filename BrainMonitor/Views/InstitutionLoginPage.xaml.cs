@@ -1,14 +1,11 @@
 using System.Windows;
 using System.Windows.Controls;
-using System.Linq;
-using System.Windows.Media.Imaging;
-using BrainMonitor.Views;
 
 namespace BrainMonitor.Views
 {
-    public partial class InstitutionLoginWindow : Window
+    public partial class InstitutionLoginPage : UserControl
     {
-        public InstitutionLoginWindow()
+        public InstitutionLoginPage()
         {
             InitializeComponent();
         }
@@ -37,10 +34,8 @@ namespace BrainMonitor.Views
             // 登录成功，自动登录默认的测试医护人员账号
             GlobalMedicalStaffManager.Login("1", "1");
             
-            // 打开医护人员操作界面
-            var medicalStaffWindow = new MedicalStaffWindow();
-            medicalStaffWindow.Show();
-            this.Close();
+            // 导航到医护人员操作界面
+            NavigationManager.NavigateTo(new MedicalStaffPage());
         }
 
         private void TogglePasswordButton_Click(object sender, RoutedEventArgs e)

@@ -9,6 +9,7 @@ namespace BrainMonitor.Views
     public class MedicalStaff
     {
         public string Name { get; set; } = string.Empty;
+        public string StaffId { get; set; } = string.Empty;
         public string Account { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
         public string Phone { get; set; } = string.Empty;
@@ -19,8 +20,9 @@ namespace BrainMonitor.Views
     {
         public static List<MedicalStaff> MedicalStaffList { get; set; } = new List<MedicalStaff>
         {
-            new MedicalStaff { Name = "张医生", Account = "doctor001", Password = "123456", Phone = "13800138001" },
-            new MedicalStaff { Name = "李护士", Account = "nurse001", Password = "123456", Phone = "13800138002" }
+            new MedicalStaff { Name = "测试医生", StaffId = "001", Account = "1", Password = "1", Phone = "13800138001" },
+            new MedicalStaff { Name = "张医生", StaffId = "002", Account = "doctor001", Password = "123456", Phone = "13800138002" },
+            new MedicalStaff { Name = "李护士", StaffId = "003", Account = "nurse001", Password = "123456", Phone = "13800138003" }
         };
 
         public static MedicalStaff? CurrentLoggedInStaff { get; set; } = null;
@@ -107,13 +109,25 @@ namespace BrainMonitor.Views
         // 初始化一些示例数据（可选）
         public static void InitializeSampleData()
         {
+            // 为测试医生（账号1）添加测试者
+            if (!StaffTesters.ContainsKey("1"))
+            {
+                StaffTesters["1"] = new List<Tester>
+                {
+                    new Tester { ID = "001", Name = "张三", Age = "25", Gender = "男", Phone = "13800138001" },
+                    new Tester { ID = "002", Name = "李四", Age = "30", Gender = "女", Phone = "13800138002" },
+                    new Tester { ID = "003", Name = "王五", Age = "45", Gender = "男", Phone = "13800138003" },
+                    new Tester { ID = "004", Name = "赵六", Age = "35", Gender = "女", Phone = "13800138004" }
+                };
+            }
+
             // 为张医生添加一些测试者
             if (!StaffTesters.ContainsKey("doctor001"))
             {
                 StaffTesters["doctor001"] = new List<Tester>
                 {
-                    new Tester { ID = "001", Name = "张三", Age = "25", Gender = "男", Phone = "13800138001" },
-                    new Tester { ID = "002", Name = "李四", Age = "30", Gender = "女", Phone = "13800138002" }
+                    new Tester { ID = "005", Name = "孙七", Age = "28", Gender = "男", Phone = "13800138005" },
+                    new Tester { ID = "006", Name = "周八", Age = "32", Gender = "女", Phone = "13800138006" }
                 };
             }
 
@@ -122,7 +136,7 @@ namespace BrainMonitor.Views
             {
                 StaffTesters["nurse001"] = new List<Tester>
                 {
-                    new Tester { ID = "003", Name = "王五", Age = "45", Gender = "男", Phone = "13800138003" }
+                    new Tester { ID = "007", Name = "吴九", Age = "40", Gender = "男", Phone = "13800138007" }
                 };
             }
         }
@@ -131,7 +145,6 @@ namespace BrainMonitor.Views
     public partial class MedicalStaffWindow : Window
     {
         private Tester? selectedTester;
-        private bool isLoginMode = true;
 
         public MedicalStaffWindow()
         {
@@ -139,8 +152,6 @@ namespace BrainMonitor.Views
             LoadSampleData();
             UpdateButtonStates();
             UpdateStaffInfo();
-            // 确保登录注册界面的初始状态正确
-            UpdateLoginUI();
         }
 
         private void LoadSampleData()
@@ -211,10 +222,18 @@ namespace BrainMonitor.Views
                 return;
             }
 
-            // 打开新增测试者界面
+            // 以弹窗模式打开新增测试者界面
             var testerInfoWindow = new TesterInfoWindow();
-            testerInfoWindow.Show();
-            this.Close();
+            var result = testerInfoWindow.ShowDialog();
+            
+            if (result == true)
+            {
+                // 测试者添加成功，刷新测试者列表
+                var currentTesters = GlobalTesterList.GetCurrentStaffTesters();
+                TesterDataGrid.ItemsSource = null; // 先清空
+                TesterDataGrid.ItemsSource = currentTesters; // 重新设置
+                TesterDataGrid.Items.Refresh(); // 强制刷新
+            }
         }
 
         private void TesterDataGrid_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -296,11 +315,12 @@ namespace BrainMonitor.Views
         {
             if (GlobalMedicalStaffManager.CurrentLoggedInStaff != null)
             {
-                // 已登录状态
-                StaffInfoTextBlock.Text = $"医护人员：{GlobalMedicalStaffManager.CurrentLoggedInStaff.Name}";
-                StaffInfoTextBlock.Foreground = System.Windows.Media.Brushes.Green;
-                LoginRegisterButton.Visibility = Visibility.Collapsed;
+                // 已登录状态 - 隐藏大标题，只显示姓名和工号
+                StaffNameText.Text = GlobalMedicalStaffManager.CurrentLoggedInStaff.Name;
+                StaffIdText.Text = $"工号: {GlobalMedicalStaffManager.CurrentLoggedInStaff.StaffId}";
+                StaffDepartmentText.Text = ""; // 不显示科室信息
                 LogoutButton.Visibility = Visibility.Visible;
+                StaffLoginRegisterButton.Visibility = Visibility.Collapsed;
                 
                 // 重新加载当前医护人员的测试者列表
                 TesterDataGrid.ItemsSource = GlobalTesterList.GetCurrentStaffTesters();
@@ -308,222 +328,37 @@ namespace BrainMonitor.Views
             else
             {
                 // 未登录状态
-                StaffInfoTextBlock.Text = "医护人员：未登录";
-                StaffInfoTextBlock.Foreground = System.Windows.Media.Brushes.Gray;
-                LoginRegisterButton.Visibility = Visibility.Visible;
+                StaffNameText.Text = "未登录";
+                StaffIdText.Text = "工号: --";
+                StaffDepartmentText.Text = "";
                 LogoutButton.Visibility = Visibility.Collapsed;
+                StaffLoginRegisterButton.Visibility = Visibility.Visible;
                 
                 // 清空测试者列表
                 TesterDataGrid.ItemsSource = new List<Tester>();
             }
         }
 
-        private void LoginRegisterButton_Click(object sender, RoutedEventArgs e)
+
+
+        // 注册/登录按钮事件处理
+        private void StaffLoginRegisterButton_Click(object sender, RoutedEventArgs e)
         {
-            // 显示登录注册面板
-            LoginRegisterPanel.Visibility = Visibility.Visible;
-            // 隐藏医护人员信息区域和其他面板
-            HideOtherPanels();
+            var staffLoginWindow = new StaffLoginWindow();
+            var result = staffLoginWindow.ShowDialog();
+            
+            if (result == true)
+            {
+                // 登录成功，更新界面
+                UpdateStaffInfo();
+            }
         }
 
         private void LogoutButton_Click(object sender, RoutedEventArgs e)
         {
-            var result = MessageBox.Show("确定要退出登录吗？", "确认退出", 
-                MessageBoxButton.YesNo, MessageBoxImage.Question);
-            
-            if (result == MessageBoxResult.Yes)
-            {
-                GlobalMedicalStaffManager.Logout();
-                UpdateStaffInfo();
-                // 移除退出成功的弹窗提示
-            }
-        }
-
-        // 登录注册界面相关方法
-        private void HideOtherPanels()
-        {
-            // 隐藏医护人员信息区域、项目介绍和测试者列表区域
-            var staffInfoBorder = this.FindName("StaffInfoBorder") as Border;
-            var projectIntroBorder = this.FindName("ProjectIntroBorder") as Border;
-            var testerListBorder = this.FindName("TesterListBorder") as Border;
-            var mainButtonsGrid = this.FindName("MainButtonsGrid") as Grid;
-            
-            if (staffInfoBorder != null) staffInfoBorder.Visibility = Visibility.Collapsed;
-            if (projectIntroBorder != null) projectIntroBorder.Visibility = Visibility.Collapsed;
-            if (testerListBorder != null) testerListBorder.Visibility = Visibility.Collapsed;
-            if (mainButtonsGrid != null) mainButtonsGrid.Visibility = Visibility.Collapsed;
-        }
-
-        private void ShowAllPanels()
-        {
-            // 显示所有面板
-            var staffInfoBorder = this.FindName("StaffInfoBorder") as Border;
-            var projectIntroBorder = this.FindName("ProjectIntroBorder") as Border;
-            var testerListBorder = this.FindName("TesterListBorder") as Border;
-            var mainButtonsGrid = this.FindName("MainButtonsGrid") as Grid;
-            
-            if (staffInfoBorder != null) staffInfoBorder.Visibility = Visibility.Visible;
-            if (projectIntroBorder != null) projectIntroBorder.Visibility = Visibility.Visible;
-            if (testerListBorder != null) testerListBorder.Visibility = Visibility.Visible;
-            if (mainButtonsGrid != null) mainButtonsGrid.Visibility = Visibility.Visible;
-        }
-
-        private void LoginRadioButton_Checked(object sender, RoutedEventArgs e)
-        {
-            isLoginMode = true;
-            UpdateLoginUI();
-        }
-
-        private void RegisterRadioButton_Checked(object sender, RoutedEventArgs e)
-        {
-            isLoginMode = false;
-            UpdateLoginUI();
-        }
-
-        private void UpdateLoginUI()
-        {
-            if (ActionButton == null || NameTextBox == null || PhoneTextBox == null || 
-                NameLabel == null || PhoneLabel == null)
-            {
-                return;
-            }
-
-            if (isLoginMode)
-            {
-                ActionButton.Content = "登录";
-                // 在登录模式下，隐藏姓名和手机号输入框
-                NameLabel.Visibility = Visibility.Collapsed;
-                NameTextBox.Visibility = Visibility.Collapsed;
-                PhoneLabel.Visibility = Visibility.Collapsed;
-                PhoneTextBox.Visibility = Visibility.Collapsed;
-            }
-            else
-            {
-                ActionButton.Content = "注册";
-                // 在注册模式下，显示所有字段
-                NameLabel.Visibility = Visibility.Visible;
-                NameTextBox.Visibility = Visibility.Visible;
-                PhoneLabel.Visibility = Visibility.Visible;
-                PhoneTextBox.Visibility = Visibility.Visible;
-            }
-        }
-
-        private void BackButton_Click(object sender, RoutedEventArgs e)
-        {
-            // 隐藏登录注册面板
-            LoginRegisterPanel.Visibility = Visibility.Collapsed;
-            // 显示其他面板
-            ShowAllPanels();
-            // 清空输入框
-            ClearLoginInputs();
-        }
-
-        private void ActionButton_Click(object sender, RoutedEventArgs e)
-        {
-            if (isLoginMode)
-            {
-                PerformLogin();
-            }
-            else
-            {
-                PerformRegister();
-            }
-        }
-
-        private void PerformLogin()
-        {
-            // 添加空值检查
-            if (AccountTextBox == null || PasswordBox == null)
-            {
-                MessageBox.Show("控件初始化失败", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            string account = AccountTextBox.Text.Trim();
-            string password = PasswordBox.Password;
-
-            if (string.IsNullOrEmpty(account) || string.IsNullOrEmpty(password))
-            {
-                MessageBox.Show("请输入账号和密码", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            if (GlobalMedicalStaffManager.Login(account, password))
-            {
-                // 登录成功，直接跳转，不显示弹窗
-                // 隐藏登录注册面板
-                LoginRegisterPanel.Visibility = Visibility.Collapsed;
-                // 显示其他面板
-                ShowAllPanels();
-                // 清空输入框
-                ClearLoginInputs();
-                // 更新界面状态
-                UpdateStaffInfo();
-            }
-            else
-            {
-                MessageBox.Show("账号或密码错误", "登录失败", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void PerformRegister()
-        {
-            // 添加空值检查
-            if (NameTextBox == null || AccountTextBox == null || PasswordBox == null || PhoneTextBox == null)
-            {
-                MessageBox.Show("控件初始化失败", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
-                return;
-            }
-
-            string name = NameTextBox.Text.Trim();
-            string account = AccountTextBox.Text.Trim();
-            string password = PasswordBox.Password;
-            string phone = PhoneTextBox.Text.Trim();
-
-            if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(account) || 
-                string.IsNullOrEmpty(password) || string.IsNullOrEmpty(phone))
-            {
-                MessageBox.Show("请填写所有必填字段", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
-            var newStaff = new MedicalStaff
-            {
-                Name = name,
-                Account = account,
-                Password = password,
-                Phone = phone
-            };
-
-            if (GlobalMedicalStaffManager.Register(newStaff))
-            {
-                // 注册成功后直接登录
-                if (GlobalMedicalStaffManager.Login(account, password))
-                {
-                    // 注册并登录成功，直接跳转，不显示弹窗
-                    // 隐藏登录注册面板
-                    LoginRegisterPanel.Visibility = Visibility.Collapsed;
-                    // 显示其他面板
-                    ShowAllPanels();
-                    // 清空输入框
-                    ClearLoginInputs();
-                    // 更新界面状态
-                    UpdateStaffInfo();
-                }
-            }
-            else
-            {
-                MessageBox.Show("账号已存在，请使用其他账号", "注册失败", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        private void ClearLoginInputs()
-        {
-            // 添加空值检查
-            if (NameTextBox != null) NameTextBox.Text = "";
-            if (AccountTextBox != null) AccountTextBox.Text = "";
-            if (PasswordBox != null) PasswordBox.Password = "";
-            if (PhoneTextBox != null) PhoneTextBox.Text = "";
+            // 直接执行退出登录，不显示确认弹窗
+            GlobalMedicalStaffManager.Logout();
+            UpdateStaffInfo();
         }
     }
-} 
+}

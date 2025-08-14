@@ -13,7 +13,10 @@ namespace BrainMonitor.Views
             InitializeComponent();
             CurrentTester = tester ?? new Tester(); // 确保不为null
             this.DataContext = this;
-            // 其他初始化逻辑...
+            
+            // 初始化时禁用设备列表和连接按钮
+            DeviceComboBox.IsEnabled = false;
+            ConnectDeviceButton.IsEnabled = false;
         }
 
         public TestWindow() : this(new Tester()) { } // 创建默认Tester对象
@@ -28,7 +31,26 @@ namespace BrainMonitor.Views
             DeviceComboBox.Items.Add(new System.Windows.Controls.ComboBoxItem { Content = "脑电波检测设备001" });
             DeviceComboBox.Items.Add(new System.Windows.Controls.ComboBoxItem { Content = "脑电波检测设备002" });
             
+            // 启用设备列表
+            DeviceComboBox.IsEnabled = true;
+            
+            // 添加设备选择事件处理
+            DeviceComboBox.SelectionChanged += DeviceComboBox_SelectionChanged;
+            
             MessageBox.Show("扫描完成，发现2个设备", "设备扫描", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+
+        private void DeviceComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            // 当用户选择了设备后，启用连接设备按钮
+            if (DeviceComboBox.SelectedItem != null)
+            {
+                ConnectDeviceButton.IsEnabled = true;
+            }
+            else
+            {
+                ConnectDeviceButton.IsEnabled = false;
+            }
         }
 
         private void ConnectDeviceButton_Click(object sender, RoutedEventArgs e)
@@ -120,4 +142,4 @@ namespace BrainMonitor.Views
             this.Close();
         }
     }
-} 
+}
