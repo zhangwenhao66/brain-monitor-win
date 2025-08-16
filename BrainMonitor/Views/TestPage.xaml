@@ -84,6 +84,7 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="200"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     
                     <!-- 左侧端口组 -->
@@ -97,10 +98,8 @@
                         Style="{StaticResource ModernComboBox}" 
                         Height="35"
                         Width="100"
-                        Margin="0,0,15,0">
-                        <ComboBoxItem Content="COM1"/>
-                        <ComboBoxItem Content="COM2"/>
-                        <ComboBoxItem Content="COM3"/>
+                        Margin="0,0,15,0"
+                        DropDownOpened="PortComboBox_DropDownOpened">
                     </ComboBox>
                     
                     <Button Grid.Column="2" 
@@ -137,7 +136,16 @@
                         Style="{StaticResource ModernButton}"
                         Width="100"
                         IsEnabled="False"
+                        Margin="0,0,10,0"
                         Click="ConnectDeviceButton_Click"/>
+                    
+                    <Button Grid.Column="7" 
+                        x:Name="DisconnectDeviceButton"
+                        Content="断开连接" 
+                        Style="{StaticResource ModernButton}"
+                        Width="100"
+                        IsEnabled="False"
+                        Click="DisconnectDeviceButton_Click"/>
                 </Grid>
             </StackPanel>
         </Border>
@@ -163,13 +171,41 @@
                     <!-- FontSize="16"  -->
                     <!-- Margin="0,0,0,8"/> -->
                 
-                <Border Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
-                    BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
-                    BorderThickness="1"
-                    CornerRadius="4">
-                    <Canvas x:Name="BrainwaveCanvas" 
-                        MinHeight="320" />
-                </Border>
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>   <!-- 图表区域 -->
+                        <RowDefinition Height="30"/>  <!-- 横坐标标签区域 -->
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="60"/> <!-- 左侧标签区域 -->
+                        <ColumnDefinition Width="*"/>  <!-- 图表区域 -->
+                    </Grid.ColumnDefinitions>
+                    
+                    <!-- 纵坐标标签区域 -->
+                    <Canvas x:Name="YAxisLabelsCanvas" 
+                        Grid.Row="0"
+                        Grid.Column="0"
+                        MinHeight="300"
+                        Background="Transparent"/>
+                    
+                    <!-- 脑电波图表区域 -->
+                    <Border Grid.Row="0"
+                        Grid.Column="1"
+                        Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
+                        BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                        BorderThickness="1"
+                        CornerRadius="4">
+                        <Canvas x:Name="BrainwaveCanvas" 
+                            MinHeight="300" />
+                    </Border>
+                    
+                    <!-- 横坐标时间标签区域 -->
+                    <Canvas x:Name="XAxisLabelsCanvas" 
+                        Grid.Row="1"
+                        Grid.Column="1"
+                        Height="30"
+                        Background="Transparent"/>
+                </Grid>
             </StackPanel>
         </Border>
         
