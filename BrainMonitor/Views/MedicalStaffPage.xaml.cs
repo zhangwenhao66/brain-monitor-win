@@ -212,5 +212,11 @@ namespace BrainMonitor.Views
             GlobalMedicalStaffManager.Logout();
             UpdateStaffInfo();
         }
+
+        private void InstitutionLogoutButton_Click(object sender, RoutedEventArgs e)
+        {
+            // 退出机构登录，跳转回机构登录界面
+            NavigationManager.NavigateTo(new InstitutionLoginPage());
+        }
     }
 }

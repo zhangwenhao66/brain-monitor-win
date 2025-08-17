@@ -72,6 +72,13 @@
                         Margin="15,0,0,0"
                         Click="LogoutButton_Click"
                         Visibility="Collapsed" />
+                    <Button x:Name="InstitutionLogoutButton"
+                        Content="退出机构登录"
+                        Style="{StaticResource SecondaryButton}"
+                        Width="130"
+                        Height="40"
+                        Margin="15,0,0,0"
+                        Click="InstitutionLogoutButton_Click" />
                 </StackPanel>
             </Grid>
         </Border>

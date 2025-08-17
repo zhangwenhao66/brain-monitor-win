@@ -10,15 +10,17 @@ namespace BrainMonitor.Views
     public partial class ReportPage : UserControl, INavigationAware
     {
         private Tester currentTester;
-        private double mocaScore;
-        private double mmseScore;
+        private double? macaScore;
+        private double? mmseScore;
+        private double? gripStrength;
 
-        public ReportPage(Tester tester, double moca, double mmse)
+        public ReportPage(Tester tester, double? maca, double? mmse, double? grip)
         {
             InitializeComponent();
             currentTester = tester;
-            mocaScore = moca;
+            macaScore = maca;
             mmseScore = mmse;
+            gripStrength = grip;
             LoadReportData();
         }
 
@@ -40,8 +42,8 @@ namespace BrainMonitor.Views
             TesterGenderText.Text = currentTester.Gender;
             TesterAgeText.Text = currentTester.Age;
 
-            // 计算AD风险评估（基于MOCA和MMSE评分）
-            double riskPercentage = CalculateADRisk(mocaScore, mmseScore);
+            // 计算AD风险评估（基于MACA和MMSE评分）
+            double riskPercentage = CalculateADRisk(macaScore, mmseScore);
             RiskPercentageText.Text = $"{riskPercentage:F0}%";
             
             // 设置风险等级
@@ -68,7 +70,7 @@ namespace BrainMonitor.Views
 
             // 计算大脑年龄
             int actualAge = int.TryParse(currentTester.Age, out int parsedAge) ? parsedAge : 30;
-            int brainAge = CalculateBrainAge(mocaScore, mmseScore, actualAge);
+            int brainAge = CalculateBrainAge(macaScore, mmseScore, actualAge);
             BrainAgeText.Text = $"{brainAge}岁";
             
             int ageDifference = brainAge - actualAge;
@@ -98,20 +100,22 @@ namespace BrainMonitor.Views
             DrawStaticBrainwaveChart();
         }
 
-        private double CalculateADRisk(double moca, double mmse)
+        private double CalculateADRisk(double? maca, double? mmse)
         {
             // 简化的AD风险计算算法
-            // 正常MOCA评分：26-30，正常MMSE评分：24-30
-            double mocaRisk = Math.Max(0, (26 - moca) / 26 * 50);
-            double mmseRisk = Math.Max(0, (24 - mmse) / 24 * 50);
+            // 正常MACA评分：26-30，正常MMSE评分：24-30
+            double macaRisk = maca.HasValue ? Math.Max(0, (26 - maca.Value) / 26 * 50) : 25; // 默认中等风险
+            double mmseRisk = mmse.HasValue ? Math.Max(0, (24 - mmse.Value) / 24 * 50) : 25; // 默认中等风险
             
-            return Math.Min(100, (mocaRisk + mmseRisk) / 2);
+            return Math.Min(100, (macaRisk + mmseRisk) / 2);
         }
 
-        private int CalculateBrainAge(double moca, double mmse, int actualAge)
+        private int CalculateBrainAge(double? maca, double? mmse, int actualAge)
         {
             // 简化的大脑年龄计算算法
-            double averageScore = (moca + mmse) / 2;
+            double macaValue = maca ?? 25; // 如果为空，使用默认值25
+            double mmseValue = mmse ?? 25; // 如果为空，使用默认值25
+            double averageScore = (macaValue + mmseValue) / 2;
             double normalScore = 27; // 正常平均分
             
             double ageFactor = (normalScore - averageScore) * 2;
@@ -122,7 +126,10 @@ namespace BrainMonitor.Views
         {
             string analysis = $"根据脑电波分析结果显示，受试者的认知功能";
             
-            double averageScore = (mocaScore + mmseScore) / 2;
+            // 计算平均分，如果有值则使用，否则使用默认值
+            double macaValue = macaScore ?? 25;
+            double mmseValue = mmseScore ?? 25;
+            double averageScore = (macaValue + mmseValue) / 2;
             
             if (averageScore >= 26)
             {
@@ -137,11 +144,41 @@ namespace BrainMonitor.Views
                 analysis += "存在明显的认知功能下降，建议进一步检查和专业医疗咨询。";
             }
             
-            analysis += $" MOCA量表得分{mocaScore}分，MMSE量表得分{mmseScore}分";
-            
-            if (mocaScore >= 26 && mmseScore >= 24)
+            // 添加评分信息
+            analysis += " ";
+            if (macaScore.HasValue)
             {
-                analysis += "，均处于正常范围。";
+                analysis += $"MACA量表得分{macaScore.Value}分";
+            }
+            else
+            {
+                analysis += "MACA量表未测试";
+            }
+            
+            analysis += "，";
+            if (mmseScore.HasValue)
+            {
+                analysis += $"MMSE量表得分{mmseScore.Value}分";
+            }
+            else
+            {
+                analysis += "MMSE量表未测试";
+            }
+            
+            // 添加握力值信息
+            if (gripStrength.HasValue)
+            {
+                analysis += $"，握力值{gripStrength.Value}";
+            }
+            else
+            {
+                analysis += "，握力值未测试";
+            }
+            
+            // 评估结论
+            if ((macaScore ?? 25) >= 26 && (mmseScore ?? 24) >= 24)
+            {
+                analysis += "，各项指标均处于正常范围。";
             }
             else
             {
