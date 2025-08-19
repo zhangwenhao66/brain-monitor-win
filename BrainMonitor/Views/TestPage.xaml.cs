@@ -22,6 +22,10 @@ namespace BrainMonitor.Views
         private int scanFailureCount = 0; // 扫描失败计数器
         private const int MAX_SCAN_FAILURES = 1; // 最大失败次数，超过后进行完全重置
         
+        // 测试状态管理
+        private bool isTestStarted = false; // 是否已开始测试
+        private bool isTestCompleted = false; // 是否已完成测试流程
+        
         // 数据缓冲相关变量
         private Queue<int[]> dataBuffer = new Queue<int[]>();
         private DispatcherTimer displayTimer;
@@ -50,11 +54,25 @@ namespace BrainMonitor.Views
         // 显示更新频率控制
         private const int DISPLAY_UPDATE_INTERVAL_MS = 20; // 50Hz显示更新频率，减少显示延迟
         
+        // 数据波动监控相关变量
+        private Queue<double> recentDataPoints = new Queue<double>(); // 存储最近5秒的数据点
+        private DateTime lastDataPointTime = DateTime.MinValue;
+        private bool isWaveformRed = false; // 当前曲线是否为红色
+        private const double FLUCTUATION_THRESHOLD = 200.0; // 波动阈值（微伏）
+        private const double DATA_WINDOW_SECONDS = 5.0; // 数据窗口时间（秒）
+        private DispatcherTimer zeroDataTimer; // 显示0值数据的定时器
+        private bool isShowingZeroData = false; // 是否正在显示0值数据
+        
         private void InitializeDisplayTimer()
         {
             displayTimer = new DispatcherTimer();
             displayTimer.Interval = TimeSpan.FromMilliseconds(DISPLAY_UPDATE_INTERVAL_MS);
             displayTimer.Tick += DisplayTimer_Tick;
+            
+            // 初始化0值数据显示定时器
+            zeroDataTimer = new DispatcherTimer();
+            zeroDataTimer.Interval = TimeSpan.FromMilliseconds(100); // 每100ms显示一个0值数据点
+            zeroDataTimer.Tick += ZeroDataTimer_Tick;
         }
         
         private void DisplayTimer_Tick(object sender, EventArgs e)
@@ -84,6 +102,79 @@ namespace BrainMonitor.Views
             // 如果还有数据待处理，继续在下一个周期处理
             // (移除了调试输出以减少日志噪音)
         }
+        
+        private void ZeroDataTimer_Tick(object sender, EventArgs e)
+        {
+            // 显示0值数据点
+            if (isShowingZeroData)
+            {
+                // 创建包含单个0值的数据数组
+                int[] zeroData = new int[] { 0 };
+                UpdateBrainwaveDisplay(zeroData);
+            }
+        }
+        
+        private void CalculateDataFluctuation(double microVoltValue)
+        {
+            DateTime currentTime = DateTime.Now;
+            
+            // 添加新数据点
+            recentDataPoints.Enqueue(microVoltValue);
+            
+            // 移除超过5秒的旧数据点
+            while (recentDataPoints.Count > 0)
+            {
+                // 估算数据点时间（假设采样率为520Hz）
+                double estimatedAge = recentDataPoints.Count / 520.0;
+                if (estimatedAge > DATA_WINDOW_SECONDS)
+                {
+                    recentDataPoints.Dequeue();
+                }
+                else
+                {
+                    break;
+                }
+            }
+            
+            // 计算波动值（最大值 - 最小值）
+            if (recentDataPoints.Count > 10) // 至少需要一些数据点才能计算波动
+            {
+                double maxValue = recentDataPoints.Max();
+                double minValue = recentDataPoints.Min();
+                double fluctuation = maxValue - minValue;
+                
+                // 更新曲线颜色状态
+                bool shouldBeRed = fluctuation > FLUCTUATION_THRESHOLD;
+                if (shouldBeRed != isWaveformRed)
+                {
+                    isWaveformRed = shouldBeRed;
+                    // 更新现有曲线的颜色
+                    UpdateWaveformColor();
+                }
+            }
+        }
+        
+        private void UpdateWaveformColor()
+        {
+            // 更新画布中所有波形元素的颜色
+            Color waveformColor = isWaveformRed ? Color.FromRgb(220, 50, 50) : Color.FromRgb(0, 120, 215);
+            SolidColorBrush waveformBrush = new SolidColorBrush(waveformColor);
+            
+            foreach (UIElement element in BrainwaveCanvas.Children)
+            {
+                if (element is FrameworkElement fe && fe.Tag?.ToString() == "waveform")
+                {
+                    if (element is Line line)
+                    {
+                        line.Stroke = waveformBrush;
+                    }
+                    else if (element is Ellipse ellipse)
+                    {
+                        ellipse.Fill = waveformBrush;
+                    }
+                }
+            }
+        }
 
         public TestPage(Tester tester)
         {
@@ -91,9 +182,19 @@ namespace BrainMonitor.Views
             CurrentTester = tester;
             DataContext = this;
             
+            // 初始化测试状态
+            isTestStarted = false;
+            isTestCompleted = false;
+            
             // 初始化时禁用设备列表和连接按钮
             DeviceComboBox.IsEnabled = false;
             ConnectDeviceButton.IsEnabled = false;
+            
+            // 初始化时禁用开始测试按钮，只有连接设备后才启用
+            StartTestButton.IsEnabled = false;
+            
+            // 初始化时禁用生成报告按钮，只有完成测试流程后才启用
+            UpdateGenerateReportButtonState();
             
             // 初始化SDK
             InitializeSDK();
@@ -115,10 +216,7 @@ namespace BrainMonitor.Views
             timeUpdateTimer.Interval = TimeSpan.FromMilliseconds(100); // 每100毫秒更新一次
             timeUpdateTimer.Tick += (s, e) =>
             {
-                if (isDeviceConnected)
-                {
-                    DrawTimeLabels();
-                }
+                DrawTimeLabels();
             };
             timeUpdateTimer.Start();
         }
@@ -141,8 +239,7 @@ namespace BrainMonitor.Views
             if (width <= 0) return;
             
             // 计算当前时间偏移
-            double currentTimeOffset = isDeviceConnected ? 
-                (DateTime.Now - startTime).TotalSeconds : 0;
+            double currentTimeOffset = (DateTime.Now - startTime).TotalSeconds;
             
             // 使用HashSet来避免重复的时间标签
             HashSet<string> addedTimeLabels = new HashSet<string>();
@@ -516,6 +613,16 @@ namespace BrainMonitor.Views
                 // 将原始ADC数据转换为微伏值（ADC值 * 0.2 = 微伏值）
                 double microVoltValue = rawData[i] * 0.2;
                 
+                // 如果收到真实数据，停止显示0值数据
+                if (isShowingZeroData && microVoltValue != 0)
+                {
+                    isShowingZeroData = false;
+                    zeroDataTimer.Stop();
+                }
+                
+                // 计算数据波动
+                CalculateDataFluctuation(microVoltValue);
+                
                 // 计算Y坐标（向下为正，所以需要反转）
                 double y = baselineY - (microVoltValue * scale);
                 
@@ -524,6 +631,10 @@ namespace BrainMonitor.Views
                 
                 // 计算X坐标（新数据从右边开始）
                 double x = canvasWidth - (rawData.Length - i) * pixelsPerDataPoint;
+                
+                // 根据波动状态选择颜色
+                Color waveformColor = isWaveformRed ? Color.FromRgb(220, 50, 50) : Color.FromRgb(0, 120, 215);
+                SolidColorBrush waveformBrush = new SolidColorBrush(waveformColor);
                 
                 // 绘制连线或点
                 if (hasLastPoint || i > 0)
@@ -538,7 +649,7 @@ namespace BrainMonitor.Views
                         Y1 = prevY,
                         X2 = x,
                         Y2 = y,
-                        Stroke = new SolidColorBrush(Color.FromRgb(0, 120, 215)),
+                        Stroke = waveformBrush,
                         StrokeThickness = 1.5,
                         Tag = "waveform"
                     };
@@ -551,7 +662,7 @@ namespace BrainMonitor.Views
                     {
                         Width = 2,
                         Height = 2,
-                        Fill = new SolidColorBrush(Color.FromRgb(0, 120, 215)),
+                        Fill = waveformBrush,
                         Tag = "waveform"
                     };
                     Canvas.SetLeft(point, x - 1);
@@ -621,6 +732,8 @@ namespace BrainMonitor.Views
         public void OnNavigatedTo()
         {
             // 页面导航到时的处理
+            // 确保按钮状态正确
+            UpdateGenerateReportButtonState();
         }
 
         public void OnNavigatedFrom()
@@ -660,6 +773,14 @@ namespace BrainMonitor.Views
                     
                     // 重置设备连接状态
                     isDeviceConnected = false;
+                    
+                    // 停止0值数据显示
+                    isShowingZeroData = false;
+                    zeroDataTimer?.Stop();
+                    
+                    // 重置波动监控状态
+                    recentDataPoints.Clear();
+                    isWaveformRed = false;
                     
                     // 注意：不调用SDK_DisconnectPort()和SDK_Cleanup()
                     // 保持SDK和端口连接状态，以便重新扫描设备
@@ -730,6 +851,10 @@ namespace BrainMonitor.Views
                  dataReceiveCount = 0;
                  firstDataReceiveTime = DateTime.MinValue;
                  scanFailureCount = 0; // 重置失败计数器
+                
+                // 重置测试状态
+                isTestStarted = false;
+                isTestCompleted = false;
                 
                 // 3. 清空所有集合
                 scannedDevices.Clear();
@@ -1827,15 +1952,11 @@ namespace BrainMonitor.Views
                         {
                             // 设置设备连接状态
                             isDeviceConnected = true;
-                            startTime = DateTime.Now;
                             
                             // 更新按钮状态
                             UpdateButtonStates(true);
                             
-                            // 启动时间更新定时器
-                            StartTimeUpdateTimer();
-                            
-                            // 开始数据采集
+                            // 开始数据采集（图表移动和0值显示将在这里启动）
                             StartDataCollection();
                         });
                     }
@@ -1913,6 +2034,18 @@ namespace BrainMonitor.Views
                 // 设置设备连接状态
                 isDeviceConnected = false;
                 
+                // 重置测试状态
+                isTestStarted = false;
+                isTestCompleted = false;
+                
+                // 停止0值数据显示
+                isShowingZeroData = false;
+                zeroDataTimer?.Stop();
+                
+                // 重置波动监控状态
+                recentDataPoints.Clear();
+                isWaveformRed = false;
+                
                 // 重置开始时间，使横坐标恢复到原始状态（-00:00:08到00:00:00）
                 startTime = DateTime.Now;
                 
@@ -1926,6 +2059,9 @@ namespace BrainMonitor.Views
                 
                 // 更新按钮状态
                 UpdateButtonStates(false);
+                
+                // 更新生成报告按钮状态
+                UpdateGenerateReportButtonState();
                 
                 // 停止时间更新定时器
                 StopTimeUpdateTimer();
@@ -1982,6 +2118,9 @@ namespace BrainMonitor.Views
             ConnectDeviceButton.IsEnabled = !isConnected && DeviceComboBox.SelectedItem != null;
             DisconnectDeviceButton.IsEnabled = isConnected;
             
+            // 开始测试按钮：只有在设备连接成功后才启用
+            StartTestButton.IsEnabled = isConnected;
+            
             // 连接状态下禁用设备列表，断开状态下也禁用设备列表（需要重新扫描才能启用）
             if (isConnected)
             {
@@ -1992,6 +2131,9 @@ namespace BrainMonitor.Views
                 // 断开连接后，设备列表应该被禁用，只有扫描后才能启用
                 DeviceComboBox.IsEnabled = false;
             }
+            
+            // 更新生成报告按钮状态
+            UpdateGenerateReportButtonState();
         }
         
         private void ClearDeviceList()
@@ -2035,6 +2177,9 @@ namespace BrainMonitor.Views
             // 更新按钮状态
             UpdateButtonStates(false);
             
+            // 更新生成报告按钮状态
+            UpdateGenerateReportButtonState();
+            
             // 扫描成功后启用设备列表（覆盖UpdateButtonStates的设置）
             DeviceComboBox.IsEnabled = true;
             
@@ -2055,6 +2200,14 @@ namespace BrainMonitor.Views
                 lastDataReceiveTime = DateTime.MinValue;
                 
                 currentX = BrainwaveCanvas.ActualWidth; // 从右侧开始
+                
+                // 设置开始时间并启动图表移动
+                startTime = DateTime.Now;
+                StartTimeUpdateTimer();
+                
+                // 开始显示0值数据（在收到真实数据之前）
+                isShowingZeroData = true;
+                zeroDataTimer.Start();
                 
                 // 先进行设备配置（这是关键步骤！）
                 ConfigureDevice();
@@ -2274,11 +2427,59 @@ namespace BrainMonitor.Views
 
         private void StartTestButton_Click(object sender, RoutedEventArgs e)
         {
-            // 开始测试的逻辑
-            Dispatcher.Invoke(() => MessageBox.Show("开始脑电测试", "提示", MessageBoxButton.OK, MessageBoxImage.Information));
+            // 检查曲线颜色状态
+            if (isWaveformRed)
+            {
+                MessageBox.Show("目前脑电波波动太大，无法开始测试，请保持稳定后，等待曲线变成蓝色再点击", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
             
-            // 这里可以添加具体的测试开始逻辑
-            // 例如：开始数据采集、启动测试流程等
+            // 设置测试开始状态
+            isTestStarted = true;
+            isTestCompleted = false;
+            
+            // 禁用生成报告按钮，直到测试完成
+            UpdateGenerateReportButtonState();
+            
+            // 跳转到测试流程界面
+            var testProcessPage = new TestProcessPage();
+            testProcessPage.ReturnToTestPage += TestProcessPage_ReturnToTestPage;
+            testProcessPage.TestCompleted += TestProcessPage_TestCompleted;
+            NavigationManager.NavigateTo(testProcessPage);
+        }
+        
+        private void TestProcessPage_ReturnToTestPage(object sender, EventArgs e)
+        {
+            // 从测试流程界面返回到测试界面
+            NavigationManager.NavigateTo(this);
+            
+            // 如果测试已完成，启用生成报告按钮
+            if (isTestCompleted)
+            {
+                UpdateGenerateReportButtonState();
+            }
+        }
+        
+        private void TestProcessPage_TestCompleted(object sender, EventArgs e)
+        {
+            // 测试流程完成，设置测试完成状态
+            isTestCompleted = true;
+            
+            // 更新生成报告按钮状态
+            UpdateGenerateReportButtonState();
+        }
+        
+        private void UpdateGenerateReportButtonState()
+        {
+            // 只有在测试已开始且测试流程已完成的情况下，才启用生成报告按钮
+            bool shouldEnable = isTestStarted && isTestCompleted;
+            
+            // 在UI线程中更新按钮状态
+            Dispatcher.Invoke(() =>
+            {
+                // 直接使用按钮引用更新其启用状态
+                GenerateReportButton.IsEnabled = shouldEnable;
+            });
         }
 
         private void GetReportButton_Click(object sender, RoutedEventArgs e)

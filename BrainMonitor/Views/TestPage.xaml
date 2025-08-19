@@ -335,7 +335,9 @@
             </Button>
             
             <Button Style="{StaticResource ModernButton}"
+                x:Name="GenerateReportButton"
                 Width="120"
+                IsEnabled="False"
                 Click="GetReportButton_Click">
                 <Button.Content>
                     <StackPanel Orientation="Horizontal">
