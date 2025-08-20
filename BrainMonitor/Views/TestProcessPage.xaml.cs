@@ -4,6 +4,9 @@ using System.Windows.Controls;
 using System.Windows.Threading;
 using System.Windows.Media;
 using System.IO;
+using System.Collections.Generic;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace BrainMonitor.Views
 {
@@ -12,16 +15,26 @@ namespace BrainMonitor.Views
         private DispatcherTimer instructionTimer;
         private DispatcherTimer countdownTimer;
         private DispatcherTimer audioWaitTimer; // 音频播放完成后的等待定时器
+        private DispatcherTimer dataRecordTimer; // 数据记录定时器
         private int currentStep = 0;
         private int countdownSeconds = 0;
         private bool isCountingDown = false;
         private bool isAudioPlaying = false; // 标记是否正在播放音频
+        private bool isRecordingData = false; // 标记是否正在记录数据
         
         // 音频播放器
         private MediaPlayer audioPlayer;
         
         // 取消令牌，用于取消后台任务
         private CancellationTokenSource cancellationTokenSource;
+        
+        // 数据记录相关
+        private List<string> currentTestData = new List<string>(); // 当前测试的数据
+        private string currentTestType = ""; // 当前测试类型（睁眼/闭眼）
+        private DateTime testStartTime; // 测试开始时间
+        
+        // 当前测试者信息
+        private Tester currentTester;
         
         // 测试流程步骤 - 现在有8个步骤
         private readonly string[] instructions = new string[]
@@ -41,15 +54,15 @@ namespace BrainMonitor.Views
         {
             3,  // 第一个指令显示3秒
             3,  // 第二个指令显示3秒
-            5,  // 第一次倒计时5秒
+            180,  // 第一次倒计时3分钟
             3,  // 第四个指令显示3秒
             3,  // 第五个指令显示3秒
-            5,  // 第二次倒计时5秒
+            180,  // 第二次倒计时3分钟
             3,  // 第七个指令显示3秒
             -1   // 最后一个指令一直显示
         };
         
-        // 音频文件路径
+        // 音频文件路径（相对于应用程序执行目录）
         private readonly string[] audioFiles = new string[]
         {
             "audio/audio1.mp3",
@@ -65,9 +78,12 @@ namespace BrainMonitor.Views
         public event EventHandler ReturnToTestPage;
         public event EventHandler TestCompleted; // 测试完成事件
 
-        public TestProcessPage()
+        public TestProcessPage(Tester tester = null)
         {
             InitializeComponent();
+            
+            // 设置当前测试者
+            currentTester = tester ?? new Tester { Name = "测试者" };
             
             // 初始化音频播放器
             audioPlayer = new MediaPlayer();
@@ -104,6 +120,11 @@ namespace BrainMonitor.Views
             audioWaitTimer = new DispatcherTimer();
             audioWaitTimer.Interval = TimeSpan.FromSeconds(1); // 等待1秒
             audioWaitTimer.Tick += AudioWaitTimer_Tick;
+            
+            // 数据记录定时器
+            dataRecordTimer = new DispatcherTimer();
+            dataRecordTimer.Interval = TimeSpan.FromMilliseconds(100); // 每100ms记录一次数据
+            dataRecordTimer.Tick += DataRecordTimer_Tick;
         }
 
         private void StartTestProcess()
@@ -127,8 +148,22 @@ namespace BrainMonitor.Views
                 // 如果是倒计时步骤，显示倒计时
                 if (currentStep == 2 || currentStep == 6)
                 {
-                    countdownSeconds = 5;
+                    countdownSeconds = 180; // 3分钟 = 180秒
                     isCountingDown = true;
+                    
+                    // 设置测试类型
+                    if (currentStep == 2)
+                    {
+                        currentTestType = "睁眼";
+                    }
+                    else
+                    {
+                        currentTestType = "闭眼";
+                    }
+                    
+                    // 开始记录数据
+                    StartDataRecording();
+                    
                     instruction = string.Format(instruction, FormatTime(countdownSeconds));
                     countdownTimer.Start();
                 }
@@ -159,9 +194,143 @@ namespace BrainMonitor.Views
                 {
                     countdownTimer.Stop();
                     isCountingDown = false;
+                    
+                    // 停止记录数据并保存
+                    StopDataRecordingAndSave();
+                    
+                    // 如果是第二次倒计时（闭眼测试），标记测试完成但继续流程
+                    if (currentStep == 6)
+                    {
+                        // 测试完成，触发TestCompleted事件
+                        TestCompleted?.Invoke(this, EventArgs.Empty);
+                        // 继续播放第八段音频，不返回
+                    }
+                    
                     audioWaitTimer.Start();
                 }
             }
+        }
+        
+        // 开始记录数据
+        private void StartDataRecording()
+        {
+            currentTestData.Clear();
+            testStartTime = DateTime.Now;
+            isRecordingData = true;
+            dataRecordTimer.Start();
+        }
+        
+        // 停止记录数据并保存
+        private void StopDataRecordingAndSave()
+        {
+            if (!isRecordingData) return;
+            
+            isRecordingData = false;
+            dataRecordTimer.Stop();
+            
+            // 保存数据到文件
+            SaveDataToFile();
+        }
+        
+        // 数据记录定时器事件
+        private void DataRecordTimer_Tick(object sender, EventArgs e)
+        {
+            if (isRecordingData)
+            {
+                // 从实际设备获取脑电波数据
+                double brainwaveData = GetActualDeviceData();
+                if (brainwaveData != double.MinValue) // 检查是否获取到有效数据
+                {
+                    currentTestData.Add(brainwaveData.ToString("F2"));
+                }
+                // 如果没有获取到有效数据，不记录任何内容，等待下一次数据
+            }
+        }
+        
+        // 从实际设备获取脑电波数据
+        private double GetActualDeviceData()
+        {
+            try
+            {
+                // 从全局数据管理器获取最新的脑电波数据
+                if (GlobalBrainwaveDataManager.HasData())
+                {
+                    double latestData = GlobalBrainwaveDataManager.GetLatestBrainwaveData();
+                    if (latestData != double.MinValue)
+                    {
+                        return latestData;
+                    }
+                }
+                
+                // 如果没有可用数据，返回特殊值表示无数据
+                return double.MinValue;
+            }
+            catch (Exception ex)
+            {
+                // 记录错误日志
+                System.Diagnostics.Debug.WriteLine($"获取设备数据失败: {ex.Message}");
+                return double.MinValue;
+            }
+        }
+        
+        // 保存数据到文件
+        private void SaveDataToFile()
+        {
+            try
+            {
+                // 获取机构ID、医护人员姓名、测试者姓名
+                string institutionId = GetCurrentInstitutionId();
+                string staffName = GetCurrentStaffName();
+                string testerName = GetCurrentTesterName();
+                
+                // 创建目录
+                string baseDir = "data";
+                string institutionDir = Path.Combine(baseDir, institutionId);
+                string staffDir = Path.Combine(institutionDir, staffName);
+                string testerDir = Path.Combine(staffDir, testerName);
+                
+                Directory.CreateDirectory(testerDir);
+                
+                // 生成文件名
+                string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                string fileName = $"{timestamp}_{currentTestType}.csv";
+                string filePath = Path.Combine(testerDir, fileName);
+                
+                // 写入CSV文件
+                File.WriteAllLines(filePath, currentTestData, Encoding.UTF8);
+            }
+            catch (Exception ex)
+            {
+                Dispatcher.Invoke(() =>
+                {
+                    MessageBox.Show($"保存数据失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                });
+            }
+        }
+        
+        // 获取当前机构ID
+        private string GetCurrentInstitutionId()
+        {
+            // 从全局机构管理获取当前机构ID
+            return GlobalInstitutionManager.CurrentInstitutionId;
+        }
+        
+        // 获取当前医护人员姓名
+        private string GetCurrentStaffName()
+        {
+            if (GlobalMedicalStaffManager.CurrentLoggedInStaff != null)
+            {
+                return GlobalMedicalStaffManager.CurrentLoggedInStaff.Name ?? "未知医护人员";
+            }
+            return "未知医护人员";
+        }
+        
+        // 获取当前测试者姓名
+        private string GetCurrentTesterName()
+        {
+            // 这里需要从父窗口或全局状态获取当前测试者信息
+            // 暂时使用默认值
+            return currentTester.Name;
         }
 
         private void NextStep()
@@ -172,17 +341,14 @@ namespace BrainMonitor.Views
             {
                 ShowCurrentInstruction();
             }
-            else
-            {
-                // 测试流程完成，触发TestCompleted事件
-                TestCompleted?.Invoke(this, EventArgs.Empty);
-            }
+            // 注意：测试完成现在在CountdownTimer_Tick中处理，不需要在这里处理
+            // 第八步会一直显示，直到用户点击返回
         }
 
         private void ResetStepDuration(int step)
         {
             // 重置步骤持续时间到原始值
-            int[] originalDurations = { 3, 3, 5, 3, 3, 5, 3, -1 };
+            int[] originalDurations = { 3, 3, 180, 3, 3, 180, 3, -1 };
             if (step < originalDurations.Length)
             {
                 stepDurations[step] = originalDurations[step];
@@ -191,12 +357,20 @@ namespace BrainMonitor.Views
 
         private string FormatTime(int seconds)
         {
-            // 由于倒计时只有5秒，直接显示秒数即可
-            return $"{seconds:D2}";
+            // 格式化时间为 MM:SS 格式
+            int minutes = seconds / 60;
+            int remainingSeconds = seconds % 60;
+            return $"{minutes:D2}:{remainingSeconds:D2}";
         }
 
         private void ReturnButton_Click(object sender, RoutedEventArgs e)
         {
+            // 如果正在记录数据，先停止并保存
+            if (isRecordingData)
+            {
+                StopDataRecordingAndSave();
+            }
+            
             // 取消所有后台任务
             cancellationTokenSource?.Cancel();
             
@@ -204,6 +378,7 @@ namespace BrainMonitor.Views
             instructionTimer?.Stop();
             countdownTimer?.Stop();
             audioWaitTimer?.Stop();
+            dataRecordTimer?.Stop();
             
             // 停止音频播放
             if (audioPlayer != null)
@@ -214,13 +389,10 @@ namespace BrainMonitor.Views
             // 重置状态
             isAudioPlaying = false;
             isCountingDown = false;
+            isRecordingData = false;
             currentStep = 0;
             
-            // 如果测试流程已经完成，触发TestCompleted事件
-            if (currentStep >= instructions.Length - 1)
-            {
-                TestCompleted?.Invoke(this, EventArgs.Empty);
-            }
+            // 注意：测试完成现在在CountdownTimer_Tick中处理，不需要在这里检查
             
             // 触发返回事件
             ReturnToTestPage?.Invoke(this, EventArgs.Empty);
@@ -229,6 +401,12 @@ namespace BrainMonitor.Views
         // 清理资源
         public void Cleanup()
         {
+            // 如果正在记录数据，先停止并保存
+            if (isRecordingData)
+            {
+                StopDataRecordingAndSave();
+            }
+            
             // 取消所有后台任务
             cancellationTokenSource?.Cancel();
             cancellationTokenSource?.Dispose();
@@ -237,9 +415,11 @@ namespace BrainMonitor.Views
             instructionTimer?.Stop();
             countdownTimer?.Stop();
             audioWaitTimer?.Stop();
+            dataRecordTimer?.Stop();
             instructionTimer = null;
             countdownTimer = null;
             audioWaitTimer = null;
+            dataRecordTimer = null;
             
             // 清理音频播放器
             if (audioPlayer != null)
@@ -254,6 +434,7 @@ namespace BrainMonitor.Views
             // 重置状态
             isAudioPlaying = false;
             isCountingDown = false;
+            isRecordingData = false;
             currentStep = 0;
         }
 
@@ -273,8 +454,9 @@ namespace BrainMonitor.Views
                 if (stepIndex < audioFiles.Length)
                 {
                     string audioPath = audioFiles[stepIndex];
-                    string projectRoot = GetProjectRootDirectory();
-                    string fullAudioPath = System.IO.Path.Combine(projectRoot, audioPath);
+                    // 从应用程序执行目录获取音频文件路径
+                    string appDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                    string fullAudioPath = System.IO.Path.Combine(appDirectory, audioPath);
                     
                     if (File.Exists(fullAudioPath))
                     {
@@ -379,36 +561,7 @@ namespace BrainMonitor.Views
             }
         }
         
-        // 获取项目根目录
-        private string GetProjectRootDirectory()
-        {
-            try
-            {
-                string currentDir = System.IO.Directory.GetCurrentDirectory();
-                
-                while (!string.IsNullOrEmpty(currentDir))
-                {
-                    string audioDir = System.IO.Path.Combine(currentDir, "audio");
-                    if (Directory.Exists(audioDir))
-                    {
-                        return currentDir;
-                    }
-                    
-                    string parentDir = System.IO.Directory.GetParent(currentDir)?.FullName;
-                    if (parentDir == currentDir || string.IsNullOrEmpty(parentDir))
-                    {
-                        break;
-                    }
-                    currentDir = parentDir;
-                }
-                
-                return System.IO.Directory.GetCurrentDirectory();
-            }
-            catch (Exception ex)
-            {
-                return System.IO.Directory.GetCurrentDirectory();
-            }
-        }
+
         
         // 音频播放完成事件处理
         private void AudioPlayer_MediaEnded(object sender, EventArgs e)

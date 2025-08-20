@@ -529,6 +529,14 @@ namespace BrainMonitor.Views
                         dataBuffer.Dequeue();
                     }
                 }
+                
+                // 将数据存储到全局数据管理器中，供TestProcessPage使用
+                if (rawData.Length > 0)
+                {
+                    // 将int数组转换为double数组并存储
+                    double[] doubleData = Array.ConvertAll(rawData, x => (double)x);
+                    GlobalBrainwaveDataManager.AddBrainwaveDataRange(doubleData);
+                }
             }
             catch (Exception ex)
             {
@@ -2472,7 +2480,7 @@ namespace BrainMonitor.Views
             UpdateGenerateReportButtonState();
             
             // 跳转到测试流程界面
-            var testProcessPage = new TestProcessPage();
+            var testProcessPage = new TestProcessPage(CurrentTester);
             testProcessPage.ReturnToTestPage += TestProcessPage_ReturnToTestPage;
             testProcessPage.TestCompleted += TestProcessPage_TestCompleted;
             NavigationManager.NavigateTo(testProcessPage);

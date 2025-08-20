@@ -31,6 +31,14 @@ namespace BrainMonitor.Views
                 }
             }
 
+            // 设置当前机构信息
+            string institutionId = InstitutionIdTextBox.Text.Trim();
+            if (string.IsNullOrWhiteSpace(institutionId))
+            {
+                institutionId = "默认机构";
+            }
+            GlobalInstitutionManager.SetCurrentInstitution(institutionId);
+            
             // 登录成功，自动登录默认的测试医护人员账号
             GlobalMedicalStaffManager.Login("1", "1");
             

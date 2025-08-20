@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Linq; // Added for .Where() and .ToList()
+using System; // Added for DateTime
 
 namespace BrainMonitor.Views
 {
@@ -53,6 +54,136 @@ namespace BrainMonitor.Views
         public static void Logout()
         {
             CurrentLoggedInStaff = null;
+        }
+    }
+
+    // 全局机构信息管理类
+    public static class GlobalInstitutionManager
+    {
+        public static string CurrentInstitutionId { get; private set; } = "默认机构";
+        public static string CurrentInstitutionName { get; private set; } = "默认机构名称";
+
+        public static void SetCurrentInstitution(string institutionId, string institutionName = "")
+        {
+            CurrentInstitutionId = institutionId ?? "默认机构";
+            CurrentInstitutionName = string.IsNullOrWhiteSpace(institutionName) ? institutionId : institutionName;
+        }
+
+        public static void ClearCurrentInstitution()
+        {
+            CurrentInstitutionId = "默认机构";
+            CurrentInstitutionName = "默认机构名称";
+        }
+    }
+
+    // 全局脑电波数据管理器
+    public static class GlobalBrainwaveDataManager
+    {
+        private static readonly object dataLock = new object();
+        private static List<double> latestBrainwaveData = new List<double>();
+        private static DateTime lastDataUpdateTime = DateTime.MinValue;
+        private static bool isDataCollectionActive = false;
+
+        // 获取最新的脑电波数据
+        public static double GetLatestBrainwaveData()
+        {
+            lock (dataLock)
+            {
+                if (latestBrainwaveData.Count > 0)
+                {
+                    // 返回最新的数据点
+                    return latestBrainwaveData[latestBrainwaveData.Count - 1];
+                }
+                return double.MinValue; // 表示无数据
+            }
+        }
+
+        // 获取所有最新的脑电波数据
+        public static List<double> GetAllLatestBrainwaveData()
+        {
+            lock (dataLock)
+            {
+                return new List<double>(latestBrainwaveData);
+            }
+        }
+
+        // 添加新的脑电波数据
+        public static void AddBrainwaveData(double data)
+        {
+            lock (dataLock)
+            {
+                latestBrainwaveData.Add(data);
+                lastDataUpdateTime = DateTime.Now;
+                
+                // 限制数据量，避免内存溢出
+                if (latestBrainwaveData.Count > 1000)
+                {
+                    latestBrainwaveData.RemoveAt(0);
+                }
+            }
+        }
+
+        // 添加多个脑电波数据点
+        public static void AddBrainwaveDataRange(IEnumerable<double> dataRange)
+        {
+            lock (dataLock)
+            {
+                latestBrainwaveData.AddRange(dataRange);
+                lastDataUpdateTime = DateTime.Now;
+                
+                // 限制数据量，避免内存溢出
+                if (latestBrainwaveData.Count > 1000)
+                {
+                    int removeCount = latestBrainwaveData.Count - 1000;
+                    latestBrainwaveData.RemoveRange(0, removeCount);
+                }
+            }
+        }
+
+        // 清空数据
+        public static void ClearData()
+        {
+            lock (dataLock)
+            {
+                latestBrainwaveData.Clear();
+                lastDataUpdateTime = DateTime.MinValue;
+            }
+        }
+
+        // 获取最后数据更新时间
+        public static DateTime GetLastDataUpdateTime()
+        {
+            lock (dataLock)
+            {
+                return lastDataUpdateTime;
+            }
+        }
+
+        // 检查是否有可用数据
+        public static bool HasData()
+        {
+            lock (dataLock)
+            {
+                return latestBrainwaveData.Count > 0;
+            }
+        }
+
+        // 设置数据采集状态
+        public static void SetDataCollectionActive(bool active)
+        {
+            lock (dataLock)
+            {
+                isDataCollectionActive = active;
+            }
+        }
+
+        // 检查数据采集是否活跃
+        public static bool IsDataCollectionActive()
+        {
+            lock (dataLock)
+            {
+                return isDataCollectionActive;
+            }
         }
     }
 
