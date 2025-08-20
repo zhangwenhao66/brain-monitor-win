@@ -108,8 +108,15 @@ namespace BrainMonitor.Views
             // 显示0值数据点
             if (isShowingZeroData)
             {
-                // 创建包含单个0值的数据数组
-                int[] zeroData = new int[] { 0 };
+                // 计算从上次tick到现在应该产生的数据点数量
+                // 假设采样率为520Hz，每100ms应该产生约52个数据点
+                // 为了保持平滑移动，我们生成足够的数据点
+                int dataPointsPerTick = 52; // 每100ms约52个数据点
+                int[] zeroData = new int[dataPointsPerTick];
+                for (int i = 0; i < dataPointsPerTick; i++)
+                {
+                    zeroData[i] = 0;
+                }
                 UpdateBrainwaveDisplay(zeroData);
             }
         }
@@ -571,9 +578,20 @@ namespace BrainMonitor.Views
             double scale = BrainwaveCanvas.ActualHeight / microVoltRange;
             
             // 使用实际的数据接收频率计算像素移动距离
-            // 根据日志分析，平均频率约520Hz，每次接收112个数据点
-            double actualSamplingRate = totalDataPointsReceived > 0 && dataReceiveCount > 0 ? 
-                (totalDataPointsReceived / ((DateTime.Now - firstDataReceiveTime).TotalSeconds)) : 520.0;
+            // 对于0值数据，使用固定的520Hz采样率
+            // 对于真实数据，使用实际接收频率
+            double actualSamplingRate;
+            if (isShowingZeroData)
+            {
+                // 0值数据使用固定采样率
+                actualSamplingRate = 520.0;
+            }
+            else
+            {
+                // 真实数据使用实际接收频率
+                actualSamplingRate = totalDataPointsReceived > 0 && dataReceiveCount > 0 ? 
+                    (totalDataPointsReceived / ((DateTime.Now - firstDataReceiveTime).TotalSeconds)) : 520.0;
+            }
             double pixelsPerDataPoint = canvasWidth / (DISPLAY_WINDOW_SECONDS * actualSamplingRate);
             double moveDistance = rawData.Length * pixelsPerDataPoint;
             MoveWaveformLeftByPixels(moveDistance);
@@ -614,7 +632,8 @@ namespace BrainMonitor.Views
                 double microVoltValue = rawData[i] * 0.2;
                 
                 // 如果收到真实数据，停止显示0值数据
-                if (isShowingZeroData && microVoltValue != 0)
+                // 注意：这里需要检查原始数据而不是转换后的微伏值
+                if (isShowingZeroData && rawData[i] != 0)
                 {
                     isShowingZeroData = false;
                     zeroDataTimer.Stop();
@@ -2374,8 +2393,19 @@ namespace BrainMonitor.Views
             if (canvasWidth <= 0) return;
             
             // 使用实际的数据接收频率计算移动距离
-            double actualSamplingRate = totalDataPointsReceived > 0 && dataReceiveCount > 0 ? 
-                (totalDataPointsReceived / ((DateTime.Now - firstDataReceiveTime).TotalSeconds)) : 520.0;
+            // 对于0值数据，使用固定的520Hz采样率
+            double actualSamplingRate;
+            if (isShowingZeroData)
+            {
+                // 0值数据使用固定采样率
+                actualSamplingRate = 520.0;
+            }
+            else
+            {
+                // 真实数据使用实际接收频率
+                actualSamplingRate = totalDataPointsReceived > 0 && dataReceiveCount > 0 ? 
+                    (totalDataPointsReceived / ((DateTime.Now - firstDataReceiveTime).TotalSeconds)) : 520.0;
+            }
             double pixelsPerDataPoint = canvasWidth / (DISPLAY_WINDOW_SECONDS * actualSamplingRate);
             double moveDistance = dataPointCount * pixelsPerDataPoint;
             
