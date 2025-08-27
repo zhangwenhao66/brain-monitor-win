@@ -4,11 +4,14 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Linq; // Added for .Where() and .ToList()
 using System; // Added for DateTime
+using System.Threading.Tasks;
+using BrainMonitor.Services;
 
 namespace BrainMonitor.Views
 {
     public class MedicalStaff
     {
+        public int Id { get; set; } = 0;
         public string Name { get; set; } = string.Empty;
         public string StaffId { get; set; } = string.Empty;
         public string Account { get; set; } = string.Empty;
@@ -19,41 +22,87 @@ namespace BrainMonitor.Views
     // 全局医护人员管理
     public static class GlobalMedicalStaffManager
     {
-        public static List<MedicalStaff> MedicalStaffList { get; set; } = new List<MedicalStaff>
-        {
-            new MedicalStaff { Name = "测试医生", StaffId = "001", Account = "1", Password = "1", Phone = "13800138001" },
-            new MedicalStaff { Name = "张医生", StaffId = "002", Account = "doctor001", Password = "123456", Phone = "13800138002" },
-            new MedicalStaff { Name = "李护士", StaffId = "003", Account = "nurse001", Password = "123456", Phone = "13800138003" }
-        };
-
         public static MedicalStaff? CurrentLoggedInStaff { get; set; } = null;
+        public static string? CurrentToken { get; set; } = null;
 
-        public static bool Login(string account, string password)
+        public static async Task<bool> LoginAsync(string account, string password)
         {
-            var staff = MedicalStaffList.FirstOrDefault(s => s.Account == account && s.Password == password);
-            if (staff != null)
+            try
             {
-                CurrentLoggedInStaff = staff;
-                return true;
-            }
-            return false;
-        }
+                var loginRequest = new MedicalStaffLoginRequest
+                {
+                    Account = account,
+                    Password = password
+                };
 
-        public static bool Register(MedicalStaff newStaff)
-        {
-            // 检查账号是否已存在
-            if (MedicalStaffList.Any(s => s.Account == newStaff.Account))
-            {
+                var response = await HttpService.PostAsync<ApiResponse<MedicalStaffLoginResponse>>("/auth/medical-staff/login", loginRequest);
+                
+                if (response.Success && response.Data != null)
+                {
+                    // 保存token和用户信息
+                    CurrentToken = response.Data.Token;
+                    CurrentLoggedInStaff = new MedicalStaff
+                    {
+                        Id = response.Data.User.Id,
+                        Name = response.Data.User.Name,
+                        StaffId = response.Data.User.StaffId,
+                        Account = response.Data.User.Account,
+                        Password = "", // 不保存密码
+                        Phone = response.Data.User.Phone
+                    };
+                    return true;
+                }
                 return false;
             }
+            catch (System.Net.Http.HttpRequestException ex)
+            {
+                // 网络连接相关的异常，重新抛出让调用方处理
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // 其他异常，记录错误日志并返回 false
+                System.Diagnostics.Debug.WriteLine($"登录失败: {ex.Message}");
+                return false;
+            }
+        }
 
-            MedicalStaffList.Add(newStaff);
-            return true;
+        public static async Task<bool> RegisterAsync(MedicalStaff newStaff, int institutionId)
+        {
+            try
+            {
+                var registerRequest = new MedicalStaffRegisterRequest
+                {
+                    StaffId = newStaff.StaffId,
+                    Name = newStaff.Name,
+                    Account = newStaff.Account,
+                    Password = newStaff.Password,
+                    Phone = newStaff.Phone,
+                    Department = "",
+                    Position = "",
+                    InstitutionId = institutionId
+                };
+
+                var response = await HttpService.PostAsync<ApiResponse<object>>("/auth/medical-staff/register", registerRequest);
+                return response.Success;
+            }
+            catch (System.Net.Http.HttpRequestException ex)
+            {
+                // 网络连接相关的异常，重新抛出让调用方处理
+                throw;
+            }
+            catch (Exception ex)
+            {
+                // 其他异常，记录错误日志并返回 false
+                System.Diagnostics.Debug.WriteLine($"注册失败: {ex.Message}");
+                return false;
+            }
         }
 
         public static void Logout()
         {
             CurrentLoggedInStaff = null;
+            CurrentToken = null;
         }
     }
 
@@ -62,17 +111,20 @@ namespace BrainMonitor.Views
     {
         public static string CurrentInstitutionId { get; private set; } = "默认机构";
         public static string CurrentInstitutionName { get; private set; } = "默认机构名称";
+        public static int CurrentInstitutionDbId { get; private set; } = 0;
 
-        public static void SetCurrentInstitution(string institutionId, string institutionName = "")
+        public static void SetCurrentInstitution(string institutionId, string institutionName = "", int institutionDbId = 0)
         {
             CurrentInstitutionId = institutionId ?? "默认机构";
             CurrentInstitutionName = string.IsNullOrWhiteSpace(institutionName) ? institutionId : institutionName;
+            CurrentInstitutionDbId = institutionDbId;
         }
 
         public static void ClearCurrentInstitution()
         {
             CurrentInstitutionId = "默认机构";
             CurrentInstitutionName = "默认机构名称";
+            CurrentInstitutionDbId = 0;
         }
     }
 
@@ -305,7 +357,7 @@ namespace BrainMonitor.Views
             // 检查是否已登录
             if (GlobalMedicalStaffManager.CurrentLoggedInStaff == null)
             {
-                MessageBox.Show("请先登录医护人员账号", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ModernMessageBoxWindow.Show("请先登录医护人员账号", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
                 return;
             }
 
@@ -334,7 +386,7 @@ namespace BrainMonitor.Views
         {
             if (selectedTester == null)
             {
-                MessageBox.Show("请先选择一个测试者", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ModernMessageBoxWindow.Show("请先选择一个测试者", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
                 return;
             }
 
@@ -349,7 +401,7 @@ namespace BrainMonitor.Views
             // 检查是否已登录
             if (GlobalMedicalStaffManager.CurrentLoggedInStaff == null)
             {
-                MessageBox.Show("请先登录医护人员账号", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ModernMessageBoxWindow.Show("请先登录医护人员账号", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
                 return;
             }
 
@@ -414,24 +466,24 @@ namespace BrainMonitor.Views
 
         private void TesterGroupButton_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("测试者分组功能", "功能", MessageBoxButton.OK, MessageBoxImage.Information);
+            ModernMessageBoxWindow.Show("测试者分组功能", "功能", ModernMessageBoxWindow.MessageBoxType.Info);
         }
 
         private void RiskLevelButton_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("风险等级功能", "功能", MessageBoxButton.OK, MessageBoxImage.Information);
+            ModernMessageBoxWindow.Show("风险等级功能", "功能", ModernMessageBoxWindow.MessageBoxType.Info);
         }
 
         private void MyProfileButton_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("我的功能", "功能", MessageBoxButton.OK, MessageBoxImage.Information);
+            ModernMessageBoxWindow.Show("我的功能", "功能", ModernMessageBoxWindow.MessageBoxType.Info);
         }
 
         private void ViewHistoryButton_Click(object sender, RoutedEventArgs e)
         {
             if (selectedTester == null)
             {
-                MessageBox.Show("请先选择一个测试者", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ModernMessageBoxWindow.Show("请先选择一个测试者", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
                 return;
             }
 

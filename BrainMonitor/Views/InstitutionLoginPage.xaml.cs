@@ -1,5 +1,8 @@
+using System;
 using System.Windows;
 using System.Windows.Controls;
+using System.Threading.Tasks;
+using BrainMonitor.Services;
 
 namespace BrainMonitor.Views
 {
@@ -10,40 +13,81 @@ namespace BrainMonitor.Views
             InitializeComponent();
         }
 
-        private void LoginButton_Click(object sender, RoutedEventArgs e)
+        private async void LoginButton_Click(object sender, RoutedEventArgs e)
         {
-            // 获取当前显示的密码
-            string password = PasswordBox.Visibility == Visibility.Visible ? PasswordBox.Password : PasswordTextBox.Text;
-            
-            // 修改登录验证逻辑 - 允许空输入直接登录
-            // 如果机构ID和密码都为空，直接登录
-            if (string.IsNullOrWhiteSpace(InstitutionIdTextBox.Text) && string.IsNullOrWhiteSpace(password))
+            try
             {
-                // 空输入直接登录，跳过隐私协议检查
-            }
-            else
-            {
-                // 如果有输入内容，则需要检查隐私协议
-                if (!PrivacyCheckBox.IsChecked == true)
+                // 获取当前显示的密码
+                string password = PasswordBox.Visibility == Visibility.Visible ? PasswordBox.Password : PasswordTextBox.Text;
+                string institutionId = InstitutionIdTextBox.Text.Trim();
+                
+                // 验证必填字段
+                if (string.IsNullOrWhiteSpace(institutionId))
                 {
-                    MessageBox.Show("请同意隐私协议", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    ModernMessageBoxWindow.Show("请输入机构ID", "登录失败", ModernMessageBoxWindow.MessageBoxType.Warning);
                     return;
                 }
+                
+                if (string.IsNullOrWhiteSpace(password))
+                {
+                    ModernMessageBoxWindow.Show("请输入密码", "登录失败", ModernMessageBoxWindow.MessageBoxType.Warning);
+                    return;
+                }
+                
+                // 检查隐私协议
+                if (!PrivacyCheckBox.IsChecked == true)
+                {
+                    ModernMessageBoxWindow.Show("请同意隐私协议", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
+                    return;
+                }
+                
+                // 禁用登录按钮，显示加载状态
+                LoginButton.IsEnabled = false;
+                LoginButton.Content = "登录中...";
+                
+                // 调用后端API进行登录验证
+                var loginRequest = new InstitutionLoginRequest
+                {
+                    InstitutionId = institutionId,
+                    Password = password
+                };
+                
+                var response = await HttpService.PostAsync<ApiResponse<InstitutionLoginResponse>>("/auth/institution/login", loginRequest);
+                
+                if (response.Success)
+                {
+                    // 登录成功
+                    GlobalInstitutionManager.SetCurrentInstitution(
+                        response.Data.InstitutionId, 
+                        response.Data.InstitutionName, 
+                        response.Data.InstitutionDbId
+                    );
+                    
+                    // 不自动登录医护人员，保持未登录状态
+                    // GlobalMedicalStaffManager.Login("1", "1");
+                    
+                    // 导航到医护人员操作界面
+                    NavigationManager.NavigateTo(new MedicalStaffPage());
+                }
+                else
+                {
+                    ModernMessageBoxWindow.Show(response.Message ?? "登录失败", "登录失败", ModernMessageBoxWindow.MessageBoxType.Error);
+                }
             }
-
-            // 设置当前机构信息
-            string institutionId = InstitutionIdTextBox.Text.Trim();
-            if (string.IsNullOrWhiteSpace(institutionId))
+            catch (System.Net.Http.HttpRequestException ex)
             {
-                institutionId = "默认机构";
+                ModernMessageBoxWindow.Show($"登录失败: {ex.Message}", "登录失败", ModernMessageBoxWindow.MessageBoxType.Error);
             }
-            GlobalInstitutionManager.SetCurrentInstitution(institutionId);
-            
-            // 登录成功，自动登录默认的测试医护人员账号
-            GlobalMedicalStaffManager.Login("1", "1");
-            
-            // 导航到医护人员操作界面
-            NavigationManager.NavigateTo(new MedicalStaffPage());
+            catch (Exception ex)
+            {
+                ModernMessageBoxWindow.Show($"系统错误: {ex.Message}", "登录失败", ModernMessageBoxWindow.MessageBoxType.Error);
+            }
+            finally
+            {
+                // 恢复登录按钮状态
+                LoginButton.IsEnabled = true;
+                LoginButton.Content = "登录";
+            }
         }
 
         private void TogglePasswordButton_Click(object sender, RoutedEventArgs e)

@@ -63,6 +63,8 @@
                     </Grid>
                 </StackPanel>
                 
+
+                
                 <!-- 隐私协议复选框 -->
                 <StackPanel Orientation="Horizontal" 
                             HorizontalAlignment="Left" 

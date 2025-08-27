@@ -3,3 +3,7 @@ bin
 obj
 build
 jfsdk.log
+.env
+node_modules
+temp
+data

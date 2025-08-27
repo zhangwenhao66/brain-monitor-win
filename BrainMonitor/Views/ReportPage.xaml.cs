@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using BrainMonitor.Services;
 
 namespace BrainMonitor.Views
 {
@@ -13,6 +14,7 @@ namespace BrainMonitor.Views
         private double? macaScore;
         private double? mmseScore;
         private double? gripStrength;
+        private string sourcePage; // 记录来源页面
 
         public ReportPage(Tester tester, double? maca, double? mmse, double? grip)
         {
@@ -21,6 +23,23 @@ namespace BrainMonitor.Views
             macaScore = maca;
             mmseScore = mmse;
             gripStrength = grip;
+            sourcePage = "TestPage"; // 从测试页面跳转过来
+            LoadReportData();
+        }
+
+        // 从测试历史记录创建报告页面的构造函数
+        public ReportPage(Tester tester, TestHistoryRecord historyRecord)
+        {
+            InitializeComponent();
+            currentTester = tester;
+            
+            // 从历史记录中获取评分数据
+            macaScore = historyRecord.MacaScore;
+            mmseScore = historyRecord.MmseScore;
+            gripStrength = historyRecord.GripStrength;
+            
+            sourcePage = "TestHistoryPage"; // 从测试历史页面跳转过来
+            
             LoadReportData();
         }
 
@@ -335,8 +354,19 @@ namespace BrainMonitor.Views
 
         private void ReturnButton_Click(object sender, RoutedEventArgs e)
         {
-            // 返回测试页面
-            NavigationManager.NavigateTo(new TestPage(currentTester));
+            // 根据来源页面决定返回到哪里
+            switch (sourcePage)
+            {
+                case "TestHistoryPage":
+                    // 从测试历史页面来的，返回到测试历史页面
+                    NavigationManager.NavigateTo(new TestHistoryPage(currentTester));
+                    break;
+                case "TestPage":
+                default:
+                    // 从测试页面来的，返回到测试页面
+                    NavigationManager.NavigateTo(new TestPage(currentTester));
+                    break;
+            }
         }
     }
 }

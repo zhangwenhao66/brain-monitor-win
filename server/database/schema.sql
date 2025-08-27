@@ -1,0 +1,136 @@
+-- 创建数据库
+CREATE DATABASE IF NOT EXISTS brain_monitor CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE brain_monitor;
+
+-- 机构表
+CREATE TABLE institutions (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    institution_id VARCHAR(100) UNIQUE NOT NULL COMMENT '机构ID',
+    institution_name VARCHAR(200) NOT NULL COMMENT '机构名称',
+    password VARCHAR(255) COMMENT '机构密码（可选）',
+    contact_person VARCHAR(100) COMMENT '联系人',
+    contact_phone VARCHAR(20) COMMENT '联系电话',
+    address TEXT COMMENT '机构地址',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- 医护人员表
+CREATE TABLE medical_staff (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    staff_id VARCHAR(100) UNIQUE NOT NULL COMMENT '工号',
+    name VARCHAR(100) NOT NULL COMMENT '姓名',
+    account VARCHAR(100) UNIQUE NOT NULL COMMENT '登录账号',
+    password VARCHAR(255) NOT NULL COMMENT '密码（加密）',
+    phone VARCHAR(20) COMMENT '联系电话',
+    department VARCHAR(100) COMMENT '科室',
+    position VARCHAR(100) COMMENT '职位',
+    institution_id INT NOT NULL COMMENT '所属机构ID',
+    is_active BOOLEAN DEFAULT TRUE COMMENT '是否激活',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (institution_id) REFERENCES institutions(id) ON DELETE CASCADE
+);
+
+-- 测试者表
+CREATE TABLE testers (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    tester_id VARCHAR(100) UNIQUE NOT NULL COMMENT '测试者ID',
+    name VARCHAR(100) NOT NULL COMMENT '姓名',
+    age VARCHAR(10) COMMENT '年龄',
+    gender ENUM('男', '女', '其他') COMMENT '性别',
+    phone VARCHAR(20) COMMENT '联系电话',
+    medical_staff_id INT NOT NULL COMMENT '负责医护人员ID',
+    institution_id INT NOT NULL COMMENT '所属机构ID',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (medical_staff_id) REFERENCES medical_staff(id) ON DELETE CASCADE,
+    FOREIGN KEY (institution_id) REFERENCES institutions(id) ON DELETE CASCADE
+);
+
+-- 测试记录表
+CREATE TABLE test_records (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    tester_id INT NOT NULL COMMENT '测试者ID',
+    medical_staff_id INT NOT NULL COMMENT '医护人员ID',
+    institution_id INT NOT NULL COMMENT '机构ID',
+    test_start_time TIMESTAMP NOT NULL COMMENT '测试开始时间',
+    test_end_time TIMESTAMP COMMENT '测试结束时间',
+    test_status ENUM('进行中', '已完成', '已取消') DEFAULT '进行中' COMMENT '测试状态',
+    maca_score DECIMAL(5,2) COMMENT 'MACA评分',
+    mmse_score DECIMAL(5,2) COMMENT 'MMSE评分',
+    grip_strength DECIMAL(8,2) COMMENT '握力值',
+    ad_risk_value DECIMAL(5,2) COMMENT 'AD风险值',
+    brain_age DECIMAL(5,2) COMMENT '大脑年龄',
+    notes TEXT COMMENT '备注',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (tester_id) REFERENCES testers(id) ON DELETE CASCADE,
+    FOREIGN KEY (medical_staff_id) REFERENCES medical_staff(id) ON DELETE CASCADE,
+    FOREIGN KEY (institution_id) REFERENCES institutions(id) ON DELETE CASCADE
+);
+
+-- 脑电波数据表
+CREATE TABLE brainwave_data (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    test_record_id INT NOT NULL COMMENT '测试记录ID',
+    data_type ENUM('睁眼', '闭眼') NOT NULL COMMENT '数据类型',
+    timestamp TIMESTAMP NOT NULL COMMENT '数据时间戳',
+    csv_file_path VARCHAR(500) NOT NULL COMMENT 'CSV文件路径',
+    channel INT DEFAULT 1 COMMENT '通道号',
+    sampling_rate INT DEFAULT 520 COMMENT '采样率',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (test_record_id) REFERENCES test_records(id) ON DELETE CASCADE
+);
+
+-- 测试结果表
+CREATE TABLE test_results (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    test_record_id INT NOT NULL COMMENT '测试记录ID',
+    result_type ENUM('睁眼', '闭眼', '综合') NOT NULL COMMENT '结果类型',
+    alpha_power DECIMAL(10,4) COMMENT 'Alpha波功率',
+    beta_power DECIMAL(10,4) COMMENT 'Beta波功率',
+    theta_power DECIMAL(10,4) COMMENT 'Theta波功率',
+    delta_power DECIMAL(10,4) COMMENT 'Delta波功率',
+    gamma_power DECIMAL(10,4) COMMENT 'Gamma波功率',
+    total_power DECIMAL(10,4) COMMENT '总功率',
+    dominant_frequency DECIMAL(8,2) COMMENT '主频率',
+    coherence_score DECIMAL(5,2) COMMENT '相干性评分',
+    attention_score DECIMAL(5,2) COMMENT '注意力评分',
+    relaxation_score DECIMAL(5,2) COMMENT '放松度评分',
+    analysis_result TEXT COMMENT '分析结果',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (test_record_id) REFERENCES test_records(id) ON DELETE CASCADE
+);
+
+-- 插入默认机构数据（密码：123456）
+INSERT INTO institutions (institution_id, institution_name, password, contact_person, contact_phone, address) VALUES
+('默认机构', '默认机构名称', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', '管理员', '13800138000', '默认地址');
+
+-- 插入默认医护人员数据（密码：123456）
+INSERT INTO medical_staff (staff_id, name, account, password, phone, department, position, institution_id) VALUES
+('001', '测试医生', '1', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', '13800138001', '神经科', '主治医师', 1),
+('002', '张医生', 'doctor001', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', '13800138002', '神经科', '副主任医师', 1),
+('003', '李护士', 'nurse001', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', '13800138003', '护理部', '主管护师', 1);
+
+-- 插入默认测试者数据
+INSERT INTO testers (tester_id, name, age, gender, phone, medical_staff_id, institution_id) VALUES
+('001', '张三', '25', '男', '13800138001', 1, 1),
+('002', '李四', '30', '女', '13800138002', 1, 1),
+('003', '王五', '45', '男', '13800138003', 1, 1),
+('004', '赵六', '35', '女', '13800138004', 1, 1),
+('005', '孙七', '28', '男', '13800138005', 2, 1),
+('006', '周八', '32', '女', '13800138006', 2, 1),
+('007', '吴九', '40', '男', '13800138007', 3, 1);
+
+-- 创建索引
+CREATE INDEX idx_medical_staff_institution ON medical_staff(institution_id);
+CREATE INDEX idx_testers_medical_staff ON testers(medical_staff_id);
+CREATE INDEX idx_testers_institution ON testers(institution_id);
+CREATE INDEX idx_test_records_tester ON test_records(tester_id);
+CREATE INDEX idx_test_records_medical_staff ON test_records(medical_staff_id);
+CREATE INDEX idx_test_records_institution ON test_records(institution_id);
+CREATE INDEX idx_brainwave_data_test_record ON brainwave_data(test_record_id);
+CREATE INDEX idx_brainwave_data_timestamp ON brainwave_data(timestamp);
+CREATE INDEX idx_test_results_test_record ON test_results(test_record_id);
+

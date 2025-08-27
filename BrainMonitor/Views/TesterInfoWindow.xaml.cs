@@ -15,31 +15,31 @@ namespace BrainMonitor.Views
             // 验证输入
             if (string.IsNullOrWhiteSpace(IdNameTextBox.Text))
             {
-                MessageBox.Show("请输入ID/姓名", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ModernMessageBoxWindow.Show("请输入ID/姓名", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(PhoneTextBox.Text))
             {
-                MessageBox.Show("请输入手机号", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ModernMessageBoxWindow.Show("请输入手机号", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
                 return;
             }
 
             if (GenderComboBox.SelectedItem == null)
             {
-                MessageBox.Show("请选择性别", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ModernMessageBoxWindow.Show("请选择性别", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(AgeTextBox.Text))
             {
-                MessageBox.Show("请输入年龄", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ModernMessageBoxWindow.Show("请输入年龄", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
                 return;
             }
 
             if (PrivacyCheckBox.IsChecked != true)
             {
-                MessageBox.Show("请同意数据隐私协议", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ModernMessageBoxWindow.Show("请同意数据隐私协议", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
                 return;
             }
 

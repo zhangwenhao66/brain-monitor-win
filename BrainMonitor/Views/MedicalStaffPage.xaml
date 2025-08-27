@@ -52,7 +52,7 @@
                         Text=""
                         FontSize="15"
                         Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                        Visibility="Collapsed" />
+                        Margin="0,0,0,6" />
                 </StackPanel>
 
                 <!-- 操作按钮区域 -->
@@ -159,6 +159,8 @@
                         Width="130"
                         Margin="12,0,0,0"
                         Click="AddTesterButton_Click" />
+
+
                 </Grid>
 
                 <!-- 测试者列表表格 -->

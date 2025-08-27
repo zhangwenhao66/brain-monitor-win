@@ -6,7 +6,9 @@ using System.Windows.Media;
 using System.IO;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
+using BrainMonitor.Models;
 
 namespace BrainMonitor.Views
 {
@@ -36,6 +38,13 @@ namespace BrainMonitor.Views
         // 当前测试者信息
         private Tester currentTester;
         
+        // 存储睁眼和闭眼的测试结果ID
+        private int openEyesResultId = 0;
+        private int closedEyesResultId = 0;
+        
+        // 存储当前测试记录ID
+        private int currentTestRecordId = 0;
+        
         // 测试流程步骤 - 现在有8个步骤
         private readonly string[] instructions = new string[]
         {
@@ -54,10 +63,10 @@ namespace BrainMonitor.Views
         {
             3,  // 第一个指令显示3秒
             3,  // 第二个指令显示3秒
-            180,  // 第一次倒计时3分钟
+            10,  // 第一次倒计时10秒（临时调试用）
             3,  // 第四个指令显示3秒
             3,  // 第五个指令显示3秒
-            180,  // 第二次倒计时3分钟
+            10,  // 第二次倒计时10秒（临时调试用）
             3,  // 第七个指令显示3秒
             -1   // 最后一个指令一直显示
         };
@@ -76,7 +85,7 @@ namespace BrainMonitor.Views
         };
         
         public event EventHandler ReturnToTestPage;
-        public event EventHandler TestCompleted; // 测试完成事件
+        public event EventHandler<TestResultsEventArgs> TestCompletedWithResults; // 带测试结果的测试完成事件
 
         public TestProcessPage(Tester tester = null)
         {
@@ -148,7 +157,7 @@ namespace BrainMonitor.Views
                 // 如果是倒计时步骤，显示倒计时
                 if (currentStep == 2 || currentStep == 6)
                 {
-                    countdownSeconds = 180; // 3分钟 = 180秒
+                    countdownSeconds = 10; // 10秒（临时调试用）
                     isCountingDown = true;
                     
                     // 设置测试类型
@@ -196,14 +205,30 @@ namespace BrainMonitor.Views
                     isCountingDown = false;
                     
                     // 停止记录数据并保存
-                    StopDataRecordingAndSave();
-                    
-                    // 如果是第二次倒计时（闭眼测试），标记测试完成但继续流程
                     if (currentStep == 6)
                     {
-                        // 测试完成，触发TestCompleted事件
-                        TestCompleted?.Invoke(this, EventArgs.Empty);
-                        // 继续播放第八段音频，不返回
+                        // 闭眼测试完成，等待文件上传完成后再触发事件
+                        _ = Task.Run(async () => {
+                            await StopDataRecordingAndSave();
+                            
+                            // 等待一小段时间确保文件上传完成
+                            await Task.Delay(1000);
+                            
+                                                    // 在UI线程中触发事件
+                        Dispatcher.Invoke(() => {
+                            var testResultsArgs = new TestResultsEventArgs
+                            {
+                                OpenEyesResultId = openEyesResultId,
+                                ClosedEyesResultId = closedEyesResultId
+                            };
+                            TestCompletedWithResults?.Invoke(this, testResultsArgs);
+                        });
+                        });
+                    }
+                    else
+                    {
+                        // 睁眼测试，异步保存但不触发事件
+                        _ = Task.Run(async () => await StopDataRecordingAndSave());
                     }
                     
                     audioWaitTimer.Start();
@@ -221,7 +246,7 @@ namespace BrainMonitor.Views
         }
         
         // 停止记录数据并保存
-        private void StopDataRecordingAndSave()
+        private async Task StopDataRecordingAndSave()
         {
             if (!isRecordingData) return;
             
@@ -229,7 +254,7 @@ namespace BrainMonitor.Views
             dataRecordTimer.Stop();
             
             // 保存数据到文件
-            SaveDataToFile();
+            await SaveDataToFile();
         }
         
         // 数据记录定时器事件
@@ -268,13 +293,12 @@ namespace BrainMonitor.Views
             catch (Exception ex)
             {
                 // 记录错误日志
-                System.Diagnostics.Debug.WriteLine($"获取设备数据失败: {ex.Message}");
                 return double.MinValue;
             }
         }
         
         // 保存数据到文件
-        private void SaveDataToFile()
+        private async Task SaveDataToFile()
         {
             try
             {
@@ -283,12 +307,20 @@ namespace BrainMonitor.Views
                 string staffName = GetCurrentStaffName();
                 string testerName = GetCurrentTesterName();
                 
+                System.Diagnostics.Debug.WriteLine($"=== 保存数据调试信息 ===");
+                System.Diagnostics.Debug.WriteLine($"机构ID: {institutionId}");
+                System.Diagnostics.Debug.WriteLine($"医护人员姓名: {staffName}");
+                System.Diagnostics.Debug.WriteLine($"测试者姓名: {testerName}");
+                System.Diagnostics.Debug.WriteLine($"测试类型: {currentTestType}");
+                System.Diagnostics.Debug.WriteLine($"数据点数量: {currentTestData.Count}");
+                
                 // 创建目录
                 string baseDir = "data";
                 string institutionDir = Path.Combine(baseDir, institutionId);
                 string staffDir = Path.Combine(institutionDir, staffName);
                 string testerDir = Path.Combine(staffDir, testerName);
                 
+                System.Diagnostics.Debug.WriteLine($"创建目录: {testerDir}");
                 Directory.CreateDirectory(testerDir);
                 
                 // 生成文件名
@@ -296,15 +328,304 @@ namespace BrainMonitor.Views
                 string fileName = $"{timestamp}_{currentTestType}.csv";
                 string filePath = Path.Combine(testerDir, fileName);
                 
+                System.Diagnostics.Debug.WriteLine($"文件路径: {filePath}");
+                
                 // 写入CSV文件
                 File.WriteAllLines(filePath, currentTestData, Encoding.UTF8);
+                System.Diagnostics.Debug.WriteLine($"CSV文件写入完成，大小: {new FileInfo(filePath).Length} 字节");
+                
+                // 上传文件到后端服务器
+                System.Diagnostics.Debug.WriteLine($"开始上传文件到后端...");
+                await UploadFileToServer(filePath, fileName, institutionId, staffName, testerName);
             }
             catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"保存数据失败: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"异常堆栈: {ex.StackTrace}");
                 Dispatcher.Invoke(() =>
                 {
-                    MessageBox.Show($"保存数据失败: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    ModernMessageBoxWindow.Show($"保存数据失败: {ex.Message}", "错误", ModernMessageBoxWindow.MessageBoxType.Error);
                 });
+            }
+        }
+        
+        // 上传文件到后端服务器
+        private async Task UploadFileToServer(string filePath, string fileName, string institutionId, string staffName, string testerName)
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine($"=== 上传文件调试信息 ===");
+                System.Diagnostics.Debug.WriteLine($"文件路径: {filePath}");
+                System.Diagnostics.Debug.WriteLine($"文件名: {fileName}");
+                // 检查文件是否存在
+                if (!File.Exists(filePath))
+                {
+                    return;
+                }
+                
+                // 文件上传不需要测试记录ID
+                
+                // 获取当前医护人员ID
+                int medicalStaffId = GetCurrentMedicalStaffId();
+                if (medicalStaffId <= 0)
+                {
+                    return;
+                }
+                
+                // 获取JWT令牌
+                string token = GetCurrentAuthToken();
+                if (string.IsNullOrEmpty(token))
+                {
+                    return;
+                }
+                
+                // 创建HTTP客户端
+                using (var httpClient = new System.Net.Http.HttpClient())
+                {
+                    httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                    
+                    // 创建multipart form data
+                    using (var formData = new System.Net.Http.MultipartFormDataContent())
+                    {
+                        // 添加文件
+                        // 读取文件内容到字节数组，避免流关闭问题
+                        byte[] fileBytes = File.ReadAllBytes(filePath);
+                        var fileContent = new System.Net.Http.ByteArrayContent(fileBytes);
+                        fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/csv");
+                        formData.Add(fileContent, "csvFile", fileName);
+                        
+                        // 添加其他参数
+                        formData.Add(new System.Net.Http.StringContent(currentTestType), "dataType");
+                        formData.Add(new System.Net.Http.StringContent(institutionId), "institutionId");
+                        formData.Add(new System.Net.Http.StringContent(staffName), "staffName");
+                        formData.Add(new System.Net.Http.StringContent(testerName), "testerName");
+                        
+                        // 发送请求
+                        var response = await httpClient.PostAsync("http://localhost:3000/api/brainwave-data/upload", formData);
+                        
+                        if (response.IsSuccessStatusCode)
+                        {
+                            var responseContent = await response.Content.ReadAsStringAsync();
+                            
+                            // 解析响应，获取测试结果ID
+                            try
+                            {
+                                var responseData = System.Text.Json.JsonSerializer.Deserialize<UploadResponse>(responseContent);
+                                if (responseData.success && responseData.data != null)
+                                {
+                                    // 根据数据类型存储测试结果ID
+                                    if (currentTestType == "睁眼")
+                                    {
+                                        openEyesResultId = responseData.data.testResultId;
+                                    }
+                                    else if (currentTestType == "闭眼")
+                                    {
+                                        closedEyesResultId = responseData.data.testResultId;
+                                    }
+                                }
+                            }
+                            catch (Exception)
+                            {
+                                // 忽略解析错误
+                            }
+                        }
+                    }
+                }
+                
+                            }
+                catch (Exception)
+                {
+                    // 忽略上传异常
+                }
+        }
+        
+        // 文件上传不需要测试记录ID
+        private async Task<int> GetCurrentTestRecordIdAsync()
+        {
+            try
+            {
+                return 0; // 不需要测试记录ID
+            }
+            catch (Exception ex)
+            {
+                return 0;
+            }
+        }
+
+        // 创建测试记录
+        private async Task<int> CreateTestRecordAsync()
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("=== 创建测试记录 ===");
+                
+                // 获取必要信息
+                string institutionId = GetCurrentInstitutionId();
+                string staffName = GetCurrentStaffName();
+                string testerName = GetCurrentTesterName();
+                int medicalStaffId = GetCurrentMedicalStaffId();
+                string token = GetCurrentAuthToken();
+                
+                System.Diagnostics.Debug.WriteLine($"机构ID: {institutionId}");
+                System.Diagnostics.Debug.WriteLine($"医护人员姓名: {staffName}");
+                System.Diagnostics.Debug.WriteLine($"测试者姓名: {testerName}");
+                System.Diagnostics.Debug.WriteLine($"医护人员ID: {medicalStaffId}");
+                System.Diagnostics.Debug.WriteLine($"JWT令牌: {(string.IsNullOrEmpty(token) ? "空" : "已获取")}");
+                
+                if (string.IsNullOrEmpty(token))
+                {
+                    System.Diagnostics.Debug.WriteLine("错误：无法获取JWT令牌");
+                    return 0;
+                }
+                
+                // 创建测试记录数据
+                var testRecordData = new
+                {
+                    testerId = currentTester.ID,
+                    testerName = testerName,
+                    medicalStaffId = medicalStaffId,
+                    medicalStaffName = staffName,
+                    institutionId = institutionId,
+                    testDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                    testStatus = "进行中"
+                };
+                
+                System.Diagnostics.Debug.WriteLine($"准备创建测试记录: {System.Text.Json.JsonSerializer.Serialize(testRecordData)}");
+                
+                // 调用后端API创建测试记录
+                using (var httpClient = new System.Net.Http.HttpClient())
+                {
+                    httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                    
+                    var jsonContent = System.Text.Json.JsonSerializer.Serialize(testRecordData);
+                    var content = new System.Net.Http.StringContent(jsonContent, System.Text.Encoding.UTF8, "application/json");
+                    
+                    var response = await httpClient.PostAsync("http://localhost:3000/api/test-records", content);
+                    
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var responseContent = await response.Content.ReadAsStringAsync();
+                        System.Diagnostics.Debug.WriteLine($"测试记录创建成功: {responseContent}");
+                        
+                        // 解析响应获取测试记录ID
+                        try
+                        {
+                            var responseData = System.Text.Json.JsonSerializer.Deserialize<TestRecordResponse>(responseContent);
+                            if (responseData.success && responseData.data != null)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"测试记录ID: {responseData.data.testRecordId}");
+                                return responseData.data.testRecordId;
+                            }
+                        }
+                        catch (Exception parseEx)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"解析响应异常: {parseEx.Message}");
+                        }
+                    }
+                    else
+                    {
+                        var errorContent = await response.Content.ReadAsStringAsync();
+                        System.Diagnostics.Debug.WriteLine($"创建测试记录失败: {response.StatusCode} - {errorContent}");
+                        
+                        // 尝试解析错误信息
+                        try
+                        {
+                            var errorData = System.Text.Json.JsonSerializer.Deserialize<TestRecordResponse>(errorContent);
+                            if (errorData.message != null)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"错误详情: {errorData.message}");
+                            }
+                        }
+                        catch (Exception parseEx)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"解析错误信息失败: {parseEx.Message}");
+                        }
+                    }
+                }
+                
+                System.Diagnostics.Debug.WriteLine("测试记录创建失败，返回ID: 0");
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"创建测试记录异常: {ex.Message}");
+                return 0;
+            }
+        }
+        
+        // 获取当前医护人员ID
+        private int GetCurrentMedicalStaffId()
+        {
+            try
+            {
+                // 从全局医护人员管理获取当前登录的医护人员ID
+                if (GlobalMedicalStaffManager.CurrentLoggedInStaff != null)
+                {
+                    // 尝试从JWT token中解析用户ID
+                    var token = GlobalMedicalStaffManager.CurrentToken;
+                    if (!string.IsNullOrEmpty(token))
+                    {
+                        try
+                        {
+                            // 解析JWT token获取用户ID
+                            var tokenParts = token.Split('.');
+                            if (tokenParts.Length == 3)
+                            {
+                                var payload = tokenParts[1];
+                                var paddedPayload = payload.PadRight(4 * ((payload.Length + 3) / 4), '=');
+                                var decodedPayload = Convert.FromBase64String(paddedPayload.Replace('-', '+').Replace('_', '/'));
+                                var jsonPayload = System.Text.Encoding.UTF8.GetString(decodedPayload);
+                                
+                                // 解析JSON获取userId
+                                var tokenData = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(jsonPayload);
+                                if (tokenData.ContainsKey("userId") && tokenData["userId"].ValueKind != JsonValueKind.Null)
+                                {
+                                    var userId = tokenData["userId"].GetInt32();
+                                    System.Diagnostics.Debug.WriteLine($"从JWT token解析出医护人员ID: {userId}");
+                                    return userId;
+                                }
+                            }
+                        }
+                        catch (Exception tokenEx)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"解析JWT token失败: {tokenEx.Message}");
+                        }
+                    }
+                    
+                    // 如果无法从token解析，尝试从全局状态获取
+                    if (GlobalMedicalStaffManager.CurrentLoggedInStaff.Id > 0)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"从全局状态获取医护人员ID: {GlobalMedicalStaffManager.CurrentLoggedInStaff.Id}");
+                        return GlobalMedicalStaffManager.CurrentLoggedInStaff.Id;
+                    }
+                }
+                
+                System.Diagnostics.Debug.WriteLine("无法获取医护人员ID，返回0");
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"获取医护人员ID异常: {ex.Message}");
+                return 0;
+            }
+        }
+        
+        // 获取当前认证令牌
+        private string GetCurrentAuthToken()
+        {
+            try
+            {
+                // 从全局医护人员管理获取当前用户的JWT令牌
+                if (GlobalMedicalStaffManager.CurrentToken != null)
+                {
+                    return GlobalMedicalStaffManager.CurrentToken;
+                }
+                
+                return "";
+            }
+            catch (Exception ex)
+            {
+                return "";
             }
         }
         
@@ -365,10 +686,10 @@ namespace BrainMonitor.Views
 
         private void ReturnButton_Click(object sender, RoutedEventArgs e)
         {
-            // 如果正在记录数据，先停止并保存
+            // 如果正在记录数据，先停止并保存（异步处理，不等待完成）
             if (isRecordingData)
             {
-                StopDataRecordingAndSave();
+                _ = Task.Run(async () => await StopDataRecordingAndSave());
             }
             
             // 取消所有后台任务
@@ -401,10 +722,10 @@ namespace BrainMonitor.Views
         // 清理资源
         public void Cleanup()
         {
-            // 如果正在记录数据，先停止并保存
+            // 如果正在记录数据，先停止并保存（异步处理，不等待完成）
             if (isRecordingData)
             {
-                StopDataRecordingAndSave();
+                _ = Task.Run(async () => await StopDataRecordingAndSave());
             }
             
             // 取消所有后台任务
@@ -592,5 +913,25 @@ namespace BrainMonitor.Views
                 audioWaitTimer.Start();
             }
         }
+    }
+    
+    // 测试记录响应数据类
+    public class TestRecordResponse
+    {
+        public bool success { get; set; }
+        public string? message { get; set; }
+        public TestRecordData? data { get; set; }
+    }
+    
+    public class TestRecordData
+    {
+        public int testRecordId { get; set; }
+        public string? testerId { get; set; }
+        public string? testerName { get; set; }
+        public int medicalStaffId { get; set; }
+        public string? medicalStaffName { get; set; }
+        public string? institutionId { get; set; }
+        public string? testDate { get; set; }
+        public string? testStatus { get; set; }
     }
 }

@@ -13,7 +13,7 @@ namespace BrainMonitor.Views
             InitializeComponent();
         }
 
-        private void LoginButton_Click(object sender, RoutedEventArgs e)
+        private async void LoginButton_Click(object sender, RoutedEventArgs e)
         {
             // 获取当前显示的密码
             string password = PasswordBox.Visibility == Visibility.Visible ? PasswordBox.Password : PasswordTextBox.Text;
@@ -29,18 +29,32 @@ namespace BrainMonitor.Views
                 // 如果有输入内容，则需要检查隐私协议
                 if (!PrivacyCheckBox.IsChecked == true)
                 {
-                    MessageBox.Show("请同意隐私协议", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    ModernMessageBoxWindow.Show("请同意隐私协议", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
                     return;
                 }
             }
 
-            // 登录成功，自动登录默认的测试医护人员账号
-            GlobalMedicalStaffManager.Login("1", "1");
-            
-            // 打开医护人员操作界面
-            var medicalStaffWindow = new MedicalStaffWindow();
-            medicalStaffWindow.Show();
-            this.Close();
+            try
+            {
+                // 登录成功，自动登录默认的测试医护人员账号
+                bool loginSuccess = await GlobalMedicalStaffManager.LoginAsync("1", "1");
+                
+                if (loginSuccess)
+                {
+                    // 打开医护人员操作界面
+                    var medicalStaffWindow = new MedicalStaffWindow();
+                    medicalStaffWindow.Show();
+                    this.Close();
+                }
+                else
+                {
+                    ModernMessageBoxWindow.Show("医护人员登录失败", "登录失败", ModernMessageBoxWindow.MessageBoxType.Error);
+                }
+            }
+            catch (System.Exception ex)
+            {
+                ModernMessageBoxWindow.Show($"登录失败: {ex.Message}", "登录失败", ModernMessageBoxWindow.MessageBoxType.Error);
+            }
         }
 
         private void TogglePasswordButton_Click(object sender, RoutedEventArgs e)

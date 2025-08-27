@@ -1,15 +1,11 @@
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
+using System.Threading.Tasks;
+using BrainMonitor.Services;
 
 namespace BrainMonitor.Views
 {
-    public class TestHistoryRecord
-    {
-        public string Date { get; set; } = string.Empty;
-        public string Result { get; set; } = string.Empty;
-    }
-
     public partial class TestHistoryWindow : Window
     {
         private Tester? currentTester;
@@ -21,17 +17,43 @@ namespace BrainMonitor.Views
             LoadHistoryData();
         }
 
-        private void LoadHistoryData()
+        private async void LoadHistoryData()
         {
-            // 模拟历史记录数据
-            var historyRecords = new List<TestHistoryRecord>
+            if (currentTester == null)
             {
-                new TestHistoryRecord { Date = "2023-01-01", Result = "0.42" },
-                new TestHistoryRecord { Date = "2023-02-01", Result = "0.39" },
-                new TestHistoryRecord { Date = "2023-03-01", Result = "0.37" },
-                new TestHistoryRecord { Date = "2023-04-01", Result = "0.35" }
-            };
-            HistoryDataGrid.ItemsSource = historyRecords;
+                HistoryDataGrid.ItemsSource = new List<TestHistoryRecord>();
+                return;
+            }
+
+            try
+            {
+                // 显示加载状态
+                // 这里可以添加一个加载指示器
+                
+                // 从后端获取测试历史数据
+                var historyRecords = await TestHistoryService.GetAllTestHistoryAsync(currentTester.ID);
+                
+                if (historyRecords != null && historyRecords.Count > 0)
+                {
+                    HistoryDataGrid.ItemsSource = historyRecords;
+                }
+                else
+                {
+                    // 如果没有历史记录，显示空列表
+                    HistoryDataGrid.ItemsSource = new List<TestHistoryRecord>();
+                }
+            }
+            catch (System.Exception ex)
+            {
+                // 记录错误日志
+                System.Diagnostics.Debug.WriteLine($"加载测试历史失败: {ex.Message}");
+                
+                // 显示错误提示
+                ModernMessageBoxWindow.Show($"加载测试历史失败: {ex.Message}", "错误", ModernMessageBoxWindow.MessageBoxType.Error);
+                
+                // 显示空列表
+                HistoryDataGrid.ItemsSource = new List<TestHistoryRecord>();
+            }
         }
 
         private void EnterTestButton_Click(object sender, RoutedEventArgs e)
@@ -43,17 +65,17 @@ namespace BrainMonitor.Views
 
         private void TesterGroupButton_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("测试者分组功能", "功能", MessageBoxButton.OK, MessageBoxImage.Information);
+            ModernMessageBoxWindow.Show("测试者分组功能", "功能", ModernMessageBoxWindow.MessageBoxType.Info);
         }
 
         private void RiskLevelButton_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("风险等级功能", "功能", MessageBoxButton.OK, MessageBoxImage.Information);
+            ModernMessageBoxWindow.Show("风险等级功能", "功能", ModernMessageBoxWindow.MessageBoxType.Info);
         }
 
         private void MyProfileButton_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show("我的功能", "功能", MessageBoxButton.OK, MessageBoxImage.Information);
+            ModernMessageBoxWindow.Show("我的功能", "功能", ModernMessageBoxWindow.MessageBoxType.Info);
         }
 
         private void ReturnButton_Click(object sender, RoutedEventArgs e)

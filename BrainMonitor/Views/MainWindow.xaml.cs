@@ -8,6 +8,8 @@ namespace BrainMonitor.Views
         public MainWindow()
         {
             InitializeComponent();
+            // 初始化导航管理器
+            NavigationManager.Initialize(this);
             // 默认显示机构登录页面
             NavigateToPage(new InstitutionLoginPage());
         }
@@ -31,7 +33,7 @@ namespace BrainMonitor.Views
         /// 获取当前显示的页面
         /// </summary>
         /// <returns>当前页面</returns>
-        public UserControl GetCurrentPage()
+        public UserControl? GetCurrentPage()
         {
             return ContentContainer.Content as UserControl;
         }
@@ -54,7 +56,7 @@ namespace BrainMonitor.Views
 
         public static void Initialize(MainWindow mainWindow)
         {
-            _mainWindow = mainWindow;
+            _mainWindow = mainWindow ?? throw new ArgumentNullException(nameof(mainWindow));
         }
 
         public static void NavigateTo(UserControl page)
@@ -62,12 +64,12 @@ namespace BrainMonitor.Views
             _mainWindow?.NavigateToPage(page);
         }
 
-        public static UserControl GetCurrentPage()
+        public static UserControl? GetCurrentPage()
         {
             return _mainWindow?.GetCurrentPage();
         }
 
-        public static MainWindow GetMainWindow()
+        public static MainWindow? GetMainWindow()
         {
             return _mainWindow;
         }

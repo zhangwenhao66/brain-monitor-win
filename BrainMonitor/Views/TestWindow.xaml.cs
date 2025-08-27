@@ -24,7 +24,7 @@ namespace BrainMonitor.Views
         private void ScanDeviceButton_Click(object sender, RoutedEventArgs e)
         {
             // 模拟扫描设备
-            MessageBox.Show("正在扫描设备...", "设备扫描", MessageBoxButton.OK, MessageBoxImage.Information);
+            ModernMessageBoxWindow.Show("正在扫描设备...", "设备扫描", ModernMessageBoxWindow.MessageBoxType.Info);
             
             // 清空并重新添加设备选项
             DeviceComboBox.Items.Clear();
@@ -37,7 +37,7 @@ namespace BrainMonitor.Views
             // 添加设备选择事件处理
             DeviceComboBox.SelectionChanged += DeviceComboBox_SelectionChanged;
             
-            MessageBox.Show("扫描完成，发现2个设备", "设备扫描", MessageBoxButton.OK, MessageBoxImage.Information);
+            ModernMessageBoxWindow.Show("扫描完成，发现2个设备", "设备扫描", ModernMessageBoxWindow.MessageBoxType.Info);
         }
 
         private void DeviceComboBox_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
@@ -57,23 +57,23 @@ namespace BrainMonitor.Views
         {
             if (PortComboBox.SelectedItem == null)
             {
-                MessageBox.Show("请选择端口", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ModernMessageBoxWindow.Show("请选择端口", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
                 return;
             }
 
             if (DeviceComboBox.SelectedItem == null)
             {
-                MessageBox.Show("请选择设备", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ModernMessageBoxWindow.Show("请选择设备", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
                 return;
             }
 
             // 模拟连接设备
-            MessageBox.Show("正在连接设备...", "设备连接", MessageBoxButton.OK, MessageBoxImage.Information);
+            ModernMessageBoxWindow.Show("正在连接设备...", "设备连接", ModernMessageBoxWindow.MessageBoxType.Info);
             
             // 模拟开始显示脑电波
             StartBrainwaveSimulation();
             
-            MessageBox.Show("设备连接成功！", "设备连接", MessageBoxButton.OK, MessageBoxImage.Information);
+            ModernMessageBoxWindow.Show("设备连接成功！", "设备连接", ModernMessageBoxWindow.MessageBoxType.Success);
         }
 
         private void StartBrainwaveSimulation()
@@ -105,26 +105,26 @@ namespace BrainMonitor.Views
             // 验证量表输入
             if (string.IsNullOrWhiteSpace(MocaScoreTextBox.Text))
             {
-                MessageBox.Show("请输入MOCA量表得分", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ModernMessageBoxWindow.Show("请输入MOCA量表得分", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
                 return;
             }
 
             if (string.IsNullOrWhiteSpace(MmseScoreTextBox.Text))
             {
-                MessageBox.Show("请输入MMSE量表得分", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ModernMessageBoxWindow.Show("请输入MMSE量表得分", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
                 return;
             }
 
             // 验证输入是否为数字
             if (!int.TryParse(MocaScoreTextBox.Text, out int mocaScore) || mocaScore < 0 || mocaScore > 30)
             {
-                MessageBox.Show("MOCA量表得分应为0-30之间的数字", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ModernMessageBoxWindow.Show("MOCA量表得分应为0-30之间的数字", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
                 return;
             }
 
             if (!int.TryParse(MmseScoreTextBox.Text, out int mmseScore) || mmseScore < 0 || mmseScore > 30)
             {
-                MessageBox.Show("MMSE量表得分应为0-30之间的数字", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ModernMessageBoxWindow.Show("MMSE量表得分应为0-30之间的数字", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
                 return;
             }
 

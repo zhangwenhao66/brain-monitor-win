@@ -97,6 +97,16 @@
     </Window.Resources>
     
     <Grid Margin="40">
+        <!-- 标题区域 -->
+        <TextBlock x:Name="TitleText"
+                   Text="医护人员登录"
+                   FontSize="24"
+                   FontWeight="Bold"
+                   Foreground="#0078D4"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Top"
+                   Margin="0,0,0,30" />
+        
         <Border Style="{StaticResource CardStyle}" 
                 VerticalAlignment="Center" 
                 HorizontalAlignment="Center"
@@ -108,9 +118,10 @@
                            <!-- Margin="0,0,0,30"/> -->
                 
                 <!-- Tab控件 -->
-                <TabControl x:Name="LoginRegisterTabControl" 
+                <TabControl x:Name="MainTabControl" 
                            Margin="0,0,0,30"
-                           Style="{StaticResource ModernTabControl}">
+                           Style="{StaticResource ModernTabControl}"
+                           SelectionChanged="MainTabControl_SelectionChanged">
                     
                     <!-- 登录Tab -->
                     <TabItem Header="登录" x:Name="LoginTab" Style="{StaticResource ModernTabItem}">

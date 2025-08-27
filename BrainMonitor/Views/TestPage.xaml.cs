@@ -10,6 +10,8 @@ using System.Windows.Threading;
 using BrainMonitor.SDK;
 using System.Runtime.InteropServices;
 using System.IO.Ports;
+using BrainMonitor.Models;
+using System.Text.Json;
 
 namespace BrainMonitor.Views
 {
@@ -385,8 +387,8 @@ namespace BrainMonitor.Views
                 PortComboBox.SelectedIndex = 0;
                 
                 // 显示详细错误信息给用户
-                Dispatcher.Invoke(() => MessageBox.Show($"获取串口列表失败：\n{ex.Message}\n\n可能的原因：\n1. 系统权限不足\n2. 串口驱动程序问题\n3. 系统资源不足", 
-                    "端口获取错误", MessageBoxButton.OK, MessageBoxImage.Warning));
+                Dispatcher.Invoke(() => ModernMessageBoxWindow.Show($"获取串口列表失败：\n{ex.Message}\n\n可能的原因：\n1. 系统权限不足\n2. 串口驱动程序问题\n3. 系统资源不足", 
+                    "端口获取错误", ModernMessageBoxWindow.MessageBoxType.Warning));
             }
         }
         
@@ -398,7 +400,7 @@ namespace BrainMonitor.Views
                 // 检查DLL是否可用
                 if (!BrainMonitorSDK.IsDllAvailable)
                 {
-                    Dispatcher.Invoke(() => MessageBox.Show("BrainMonitorSDK.dll不可用，无法使用设备功能", "错误", MessageBoxButton.OK, MessageBoxImage.Error));
+                    Dispatcher.Invoke(() => ModernMessageBoxWindow.Show("BrainMonitorSDK.dll不可用，无法使用设备功能", "错误", ModernMessageBoxWindow.MessageBoxType.Error));
                     return;
                 }
                 
@@ -473,12 +475,12 @@ namespace BrainMonitor.Views
                 }
                 else
                 {
-                    MessageBox.Show($"SDK初始化失败，返回值: {result}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    ModernMessageBoxWindow.Show($"SDK初始化失败，返回值: {result}", "错误", ModernMessageBoxWindow.MessageBoxType.Error);
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"SDK初始化异常: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                ModernMessageBoxWindow.Show($"SDK初始化异常: {ex.Message}", "错误", ModernMessageBoxWindow.MessageBoxType.Error);
             }
         }
         
@@ -1045,12 +1047,12 @@ namespace BrainMonitor.Views
                 // System.Diagnostics.Debug.WriteLine("=== 完全重置到初始状态完成 ===");
                 
                 // 显示重置完成消息
-                Dispatcher.Invoke(() => MessageBox.Show("系统状态已完全重置，现在可以重新扫描设备", "重置完成", MessageBoxButton.OK, MessageBoxImage.Information));
+                Dispatcher.Invoke(() => ModernMessageBoxWindow.Show("系统状态已完全重置，现在可以重新扫描设备", "重置完成", ModernMessageBoxWindow.MessageBoxType.Info));
             }
             catch (Exception ex)
             {
                 // System.Diagnostics.Debug.WriteLine($"重置到初始状态异常: {ex.Message}");
-                Dispatcher.Invoke(() => MessageBox.Show($"状态重置过程中发生异常: {ex.Message}", "重置异常", MessageBoxButton.OK, MessageBoxImage.Error));
+                Dispatcher.Invoke(() => ModernMessageBoxWindow.Show($"状态重置过程中发生异常: {ex.Message}", "重置异常", ModernMessageBoxWindow.MessageBoxType.Error));
             }
         }
 
@@ -1118,7 +1120,7 @@ namespace BrainMonitor.Views
                     {
                         await Dispatcher.InvokeAsync(() =>
                         {
-                            MessageBox.Show("SDK初始化失败，无法扫描设备", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                            ModernMessageBoxWindow.Show("SDK初始化失败，无法扫描设备", "错误", ModernMessageBoxWindow.MessageBoxType.Error);
                         });
                         return;
                     }
@@ -1135,7 +1137,7 @@ namespace BrainMonitor.Views
                 {
                     await Dispatcher.InvokeAsync(() =>
                     {
-                        MessageBox.Show("请先选择一个端口", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        ModernMessageBoxWindow.Show("请先选择一个端口", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
                     });
                     return;
                 }
@@ -1416,7 +1418,7 @@ namespace BrainMonitor.Views
                         // 如果重置后仍然失败，显示错误信息
                         if (connectResult != 1)
                         {
-                            await Dispatcher.InvokeAsync(() => MessageBox.Show($"连接端口 {selectedPort} 失败，无法扫描设备\n连接结果: {connectResult}\n\n建议：\n1. 检查设备是否正确连接\n2. 确认端口未被其他程序占用\n3. 尝试重启应用程序", "端口连接失败", MessageBoxButton.OK, MessageBoxImage.Error));
+                            await Dispatcher.InvokeAsync(() => ModernMessageBoxWindow.Show($"连接端口 {selectedPort} 失败，无法扫描设备\n连接结果: {connectResult}\n\n建议：\n1. 检查设备是否正确连接\n2. 确认端口未被其他程序占用\n3. 尝试重启应用程序", "端口连接失败", ModernMessageBoxWindow.MessageBoxType.Error));
                             return;
                         }
                     }
@@ -1425,7 +1427,7 @@ namespace BrainMonitor.Views
                 }
                 catch (Exception portEx)
                 {
-                    await Dispatcher.InvokeAsync(() => MessageBox.Show($"端口连接异常: {portEx.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error));
+                    await Dispatcher.InvokeAsync(() => ModernMessageBoxWindow.Show($"端口连接异常: {portEx.Message}", "错误", ModernMessageBoxWindow.MessageBoxType.Error));
                     return;
                 }
                 
@@ -1433,7 +1435,7 @@ namespace BrainMonitor.Views
                 if (connectResult != 1)
                 {
                     // System.Diagnostics.Debug.WriteLine("端口连接失败，无法进行扫描");
-                    await Dispatcher.InvokeAsync(() => MessageBox.Show($"端口连接失败，无法扫描设备", "错误", MessageBoxButton.OK, MessageBoxImage.Error));
+                    await Dispatcher.InvokeAsync(() => ModernMessageBoxWindow.Show($"端口连接失败，无法扫描设备", "错误", ModernMessageBoxWindow.MessageBoxType.Error));
                     return;
                 }
                 
@@ -1453,7 +1455,7 @@ namespace BrainMonitor.Views
                 catch (OperationCanceledException)
                 {
                     // System.Diagnostics.Debug.WriteLine("扫描设备超时");
-                    await Dispatcher.InvokeAsync(() => MessageBox.Show("扫描设备超时（5秒），请检查设备连接和端口设置", "扫描超时", MessageBoxButton.OK, MessageBoxImage.Warning));
+                    await Dispatcher.InvokeAsync(() => ModernMessageBoxWindow.Show("扫描设备超时（5秒），请检查设备连接和端口设置", "扫描超时", ModernMessageBoxWindow.MessageBoxType.Warning));
                     
                     // 超时后确保SDK状态一致性
                     // System.Diagnostics.Debug.WriteLine("超时后检查SDK状态...");
@@ -1496,7 +1498,7 @@ namespace BrainMonitor.Views
                     if (deviceCount == 0)
                     {
                         // System.Diagnostics.Debug.WriteLine("扫描成功但未找到设备，这是正常情况");
-                        await Dispatcher.InvokeAsync(() => MessageBox.Show("未找到任何设备，请检查设备是否开启并靠近接收器", "提示", MessageBoxButton.OK, MessageBoxImage.Information));
+                        await Dispatcher.InvokeAsync(() => ModernMessageBoxWindow.Show("未找到任何设备，请检查设备是否开启并靠近接收器", "提示", ModernMessageBoxWindow.MessageBoxType.Info));
                     }
                 }
                 else
@@ -1792,7 +1794,7 @@ namespace BrainMonitor.Views
                         }
                         
                         // System.Diagnostics.Debug.WriteLine("显示设备扫描失败消息框...");
-                        await Dispatcher.InvokeAsync(() => MessageBox.Show($"设备扫描失败（{scanFailureCount}/{MAX_SCAN_FAILURES}），SDK已重新初始化，请重试", "错误", MessageBoxButton.OK, MessageBoxImage.Error));
+                        await Dispatcher.InvokeAsync(() => ModernMessageBoxWindow.Show($"设备扫描失败（{scanFailureCount}/{MAX_SCAN_FAILURES}），SDK已重新初始化，请重试", "错误", ModernMessageBoxWindow.MessageBoxType.Error));
                         // System.Diagnostics.Debug.WriteLine("设备扫描失败消息框已关闭");
                     }
                     else
@@ -1873,27 +1875,27 @@ namespace BrainMonitor.Views
                         {
                             // System.Diagnostics.Debug.WriteLine("SEH SDK重新初始化成功");
                              sdkInitialized = true;
-                            await Dispatcher.InvokeAsync(() => MessageBox.Show("检测到SDK异常，已重新初始化，请重试扫描", "提示", MessageBoxButton.OK, MessageBoxImage.Information));
+                            await Dispatcher.InvokeAsync(() => ModernMessageBoxWindow.Show("检测到SDK异常，已重新初始化，请重试扫描", "提示", ModernMessageBoxWindow.MessageBoxType.Info));
                         }
                         else
                         {
                             // System.Diagnostics.Debug.WriteLine("SEH SDK重新初始化失败");
                              sdkInitialized = false;
-                            await Dispatcher.InvokeAsync(() => MessageBox.Show("SDK异常且重新初始化失败，请重启应用程序", "严重错误", MessageBoxButton.OK, MessageBoxImage.Error));
+                            await Dispatcher.InvokeAsync(() => ModernMessageBoxWindow.Show("SDK异常且重新初始化失败，请重启应用程序", "严重错误", ModernMessageBoxWindow.MessageBoxType.Error));
                         }
                     }
                     catch (Exception reinitEx)
                     {
                         // System.Diagnostics.Debug.WriteLine($"SEH重新初始化异常: {reinitEx.Message}");
                          sdkInitialized = false;
-                        await Dispatcher.InvokeAsync(() => MessageBox.Show("SDK重新初始化失败，请重启应用程序", "严重错误", MessageBoxButton.OK, MessageBoxImage.Error));
+                        await Dispatcher.InvokeAsync(() => ModernMessageBoxWindow.Show("SDK重新初始化失败，请重启应用程序", "严重错误", ModernMessageBoxWindow.MessageBoxType.Error));
                     }
                 }
                 else
                 {
                     await Dispatcher.InvokeAsync(() =>
                     {
-                        MessageBox.Show($"扫描设备异常: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                        ModernMessageBoxWindow.Show($"扫描设备异常: {ex.Message}", "错误", ModernMessageBoxWindow.MessageBoxType.Error);
                     });
                 }
             }
@@ -1930,7 +1932,7 @@ namespace BrainMonitor.Views
         {
             if (DeviceComboBox.SelectedItem == null)
             {
-                MessageBox.Show("请先选择一个设备", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ModernMessageBoxWindow.Show("请先选择一个设备", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
                 return;
             }
             
@@ -1950,7 +1952,7 @@ namespace BrainMonitor.Views
                 {
                     await Dispatcher.InvokeAsync(() =>
                     {
-                        MessageBox.Show("SDK未初始化或不可用，无法连接设备", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                        ModernMessageBoxWindow.Show("SDK未初始化或不可用，无法连接设备", "错误", ModernMessageBoxWindow.MessageBoxType.Error);
                     });
                     return;
                 }
@@ -1991,7 +1993,7 @@ namespace BrainMonitor.Views
                     {
                         await Dispatcher.InvokeAsync(() =>
                         {
-                            MessageBox.Show("设备连接失败", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                            ModernMessageBoxWindow.Show("设备连接失败", "错误", ModernMessageBoxWindow.MessageBoxType.Error);
                         });
                     }
                 }
@@ -2000,7 +2002,7 @@ namespace BrainMonitor.Views
             {
                 await Dispatcher.InvokeAsync(() =>
                 {
-                    MessageBox.Show($"连接设备异常: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error);
+                    ModernMessageBoxWindow.Show($"连接设备异常: {ex.Message}", "错误", ModernMessageBoxWindow.MessageBoxType.Error);
                 });
             }
             finally
@@ -2023,7 +2025,7 @@ namespace BrainMonitor.Views
                 // 检查SDK是否可用
                 if (!BrainMonitorSDK.IsDllAvailable || !sdkInitialized)
                 {
-                    Dispatcher.Invoke(() => MessageBox.Show("SDK未初始化或不可用", "错误", MessageBoxButton.OK, MessageBoxImage.Error));
+                    Dispatcher.Invoke(() => ModernMessageBoxWindow.Show("SDK未初始化或不可用", "错误", ModernMessageBoxWindow.MessageBoxType.Error));
                     return;
                 }
                 
@@ -2134,7 +2136,7 @@ namespace BrainMonitor.Views
             catch (Exception ex)
             {
                 // System.Diagnostics.Debug.WriteLine($"断开连接异常: {ex.Message}");
-                Dispatcher.Invoke(() => MessageBox.Show($"断开连接异常: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error));
+                Dispatcher.Invoke(() => ModernMessageBoxWindow.Show($"断开连接异常: {ex.Message}", "错误", ModernMessageBoxWindow.MessageBoxType.Error));
             }
         }
         
@@ -2249,12 +2251,12 @@ namespace BrainMonitor.Views
                 }
                 else
                 {
-                    Dispatcher.Invoke(() => MessageBox.Show("启动数据采集失败", "错误", MessageBoxButton.OK, MessageBoxImage.Error));
+                    Dispatcher.Invoke(() => ModernMessageBoxWindow.Show("启动数据采集失败", "错误", ModernMessageBoxWindow.MessageBoxType.Error));
                 }
             }
             catch (Exception ex)
             {
-                Dispatcher.Invoke(() => MessageBox.Show($"启动数据采集异常: {ex.Message}", "错误", MessageBoxButton.OK, MessageBoxImage.Error));
+                Dispatcher.Invoke(() => ModernMessageBoxWindow.Show($"启动数据采集异常: {ex.Message}", "错误", ModernMessageBoxWindow.MessageBoxType.Error));
             }
         }
         
@@ -2468,7 +2470,7 @@ namespace BrainMonitor.Views
             // 检查曲线颜色状态
             if (isWaveformRed)
             {
-                MessageBox.Show("目前脑电波波动太大，无法开始测试，请保持稳定后，等待曲线变成蓝色再点击", "提示", MessageBoxButton.OK, MessageBoxImage.Warning);
+                ModernMessageBoxWindow.Show("目前脑电波波动太大，无法开始测试，请保持稳定后，等待曲线变成蓝色再点击", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
                 return;
             }
             
@@ -2482,7 +2484,7 @@ namespace BrainMonitor.Views
             // 跳转到测试流程界面
             var testProcessPage = new TestProcessPage(CurrentTester);
             testProcessPage.ReturnToTestPage += TestProcessPage_ReturnToTestPage;
-            testProcessPage.TestCompleted += TestProcessPage_TestCompleted;
+            testProcessPage.TestCompletedWithResults += TestProcessPage_TestCompletedWithResults;
             NavigationManager.NavigateTo(testProcessPage);
         }
         
@@ -2498,10 +2500,14 @@ namespace BrainMonitor.Views
             }
         }
         
-        private void TestProcessPage_TestCompleted(object sender, EventArgs e)
+        private void TestProcessPage_TestCompletedWithResults(object sender, TestResultsEventArgs e)
         {
             // 测试流程完成，设置测试完成状态
             isTestCompleted = true;
+            
+            // 存储测试结果ID
+            openEyesResultId = e.OpenEyesResultId;
+            closedEyesResultId = e.ClosedEyesResultId;
             
             // 更新生成报告按钮状态
             UpdateGenerateReportButtonState();
@@ -2520,7 +2526,7 @@ namespace BrainMonitor.Views
             });
         }
 
-        private void GetReportButton_Click(object sender, RoutedEventArgs e)
+        private async void GetReportButton_Click(object sender, RoutedEventArgs e)
         {
             // 获取输入值，允许为空
             double? macaScore = null;
@@ -2532,7 +2538,7 @@ namespace BrainMonitor.Views
             {
                 if (!double.TryParse(MacaScoreTextBox.Text, out double maca) || maca < 0 || maca > 30)
                 {
-                    Dispatcher.Invoke(() => MessageBox.Show("MACA评分必须是0-30之间的数字", "提示", MessageBoxButton.OK, MessageBoxImage.Warning));
+                    Dispatcher.Invoke(() => ModernMessageBoxWindow.Show("MACA评分必须是0-30之间的数字", "提示", ModernMessageBoxWindow.MessageBoxType.Warning));
                     return;
                 }
                 macaScore = maca;
@@ -2543,7 +2549,7 @@ namespace BrainMonitor.Views
             {
                 if (!double.TryParse(MmseScoreTextBox.Text, out double mmse) || mmse < 0 || mmse > 30)
                 {
-                    Dispatcher.Invoke(() => MessageBox.Show("MMSE评分必须是0-30之间的数字", "提示", MessageBoxButton.OK, MessageBoxImage.Warning));
+                    Dispatcher.Invoke(() => ModernMessageBoxWindow.Show("MMSE评分必须是0-30之间的数字", "提示", ModernMessageBoxWindow.MessageBoxType.Warning));
                     return;
                 }
                 mmseScore = mmse;
@@ -2554,11 +2560,14 @@ namespace BrainMonitor.Views
             {
                 if (!double.TryParse(GripStrengthTextBox.Text, out double grip) || grip < 0)
                 {
-                    Dispatcher.Invoke(() => MessageBox.Show("握力值必须是大于等于0的数字", "提示", MessageBoxButton.OK, MessageBoxImage.Warning));
+                    Dispatcher.Invoke(() => ModernMessageBoxWindow.Show("握力值必须是大于等于0的数字", "提示", ModernMessageBoxWindow.MessageBoxType.Warning));
                     return;
                 }
                 gripStrength = grip;
             }
+
+            // 保存测试结果到后端
+            await SaveTestResultsToServer(macaScore, mmseScore, gripStrength);
 
             // 停止数据采集和脑电波模拟
             StopDataCollection();
@@ -2605,9 +2614,183 @@ namespace BrainMonitor.Views
                     // 保持SDK初始化状态，以便重新扫描设备时能使用真实SDK
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // 忽略清理过程中的异常
+            }
+        }
+        
+        // 存储睁眼和闭眼的测试结果ID
+        private int openEyesResultId = 0;
+        private int closedEyesResultId = 0;
+        
+        // 保存测试结果到后端服务器
+        private async Task SaveTestResultsToServer(double? macaScore, double? mmseScore, double? gripStrength)
+        {
+            try
+            {
+                // 获取当前医护人员信息
+                string staffName = GetCurrentStaffName();
+                string institutionId = GetCurrentInstitutionId();
+                
+                // 获取JWT令牌
+                string token = GetCurrentAuthToken();
+                if (string.IsNullOrEmpty(token))
+                {
+                    return;
+                }
+                
+                // 创建HTTP客户端
+                using (var httpClient = new System.Net.Http.HttpClient())
+                {
+                    httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                    
+                    // 准备测试结果数据
+                    var testResultData = new
+                    {
+                        testerId = CurrentTester.ID,
+                        testerName = CurrentTester.Name,
+                        medicalStaffId = GetCurrentMedicalStaffId(),
+                        medicalStaffName = staffName,
+                        institutionId = institutionId,
+                        testDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                        macaScore = macaScore,
+                        mmseScore = mmseScore,
+                        gripStrength = gripStrength,
+                        testStatus = "已完成",
+                        openEyesResultId = openEyesResultId > 0 ? openEyesResultId : (int?)null,
+                        closedEyesResultId = closedEyesResultId > 0 ? closedEyesResultId : (int?)null
+                    };
+                    
+                    // 转换为JSON
+                    var jsonContent = System.Text.Json.JsonSerializer.Serialize(testResultData);
+                    var content = new System.Net.Http.StringContent(jsonContent, System.Text.Encoding.UTF8, "application/json");
+                    
+                    // 发送请求
+                    var response = await httpClient.PostAsync("http://localhost:3000/api/test-records", content);
+                    
+                    if (!response.IsSuccessStatusCode)
+                    {
+                        // 处理错误响应
+                        var errorContent = await response.Content.ReadAsStringAsync();
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // 忽略保存异常
+            }
+        }
+        
+        // 获取当前医护人员姓名
+        private string GetCurrentStaffName()
+        {
+            try
+            {
+                // 从全局医护人员管理获取当前登录的医护人员姓名
+                if (GlobalMedicalStaffManager.CurrentLoggedInStaff != null)
+                {
+                    return GlobalMedicalStaffManager.CurrentLoggedInStaff.Name ?? "未知医护人员";
+                }
+                return "未知医护人员";
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"获取医护人员姓名失败: {ex.Message}");
+                return "未知医护人员";
+            }
+        }
+        
+        // 获取当前机构ID
+        private string GetCurrentInstitutionId()
+        {
+            try
+            {
+                // 从全局机构管理获取当前机构ID
+                return GlobalInstitutionManager.CurrentInstitutionId ?? "001";
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"获取机构ID失败: {ex.Message}");
+                return "001"; // 默认机构ID
+            }
+        }
+        
+        // 获取当前医护人员ID
+        private int GetCurrentMedicalStaffId()
+        {
+            try
+            {
+                // 从全局医护人员管理获取当前登录的医护人员ID
+                if (GlobalMedicalStaffManager.CurrentLoggedInStaff != null)
+                {
+                    // 尝试从JWT token中解析用户ID
+                    var token = GlobalMedicalStaffManager.CurrentToken;
+                    if (!string.IsNullOrEmpty(token))
+                    {
+                        try
+                        {
+                            // 解析JWT token获取用户ID
+                            var tokenParts = token.Split('.');
+                            if (tokenParts.Length == 3)
+                            {
+                                var payload = tokenParts[1];
+                                var paddedPayload = payload.PadRight(4 * ((payload.Length + 3) / 4), '=');
+                                var decodedPayload = Convert.FromBase64String(paddedPayload.Replace('-', '+').Replace('_', '/'));
+                                var jsonPayload = System.Text.Encoding.UTF8.GetString(decodedPayload);
+                                
+                                // 解析JSON获取userId
+                                var tokenData = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(jsonPayload);
+                                if (tokenData.ContainsKey("userId") && tokenData["userId"].ValueKind != JsonValueKind.Null)
+                                {
+                                    var userId = tokenData["userId"].GetInt32();
+                                    System.Diagnostics.Debug.WriteLine($"从JWT token解析出医护人员ID: {userId}");
+                                    return userId;
+                                }
+                            }
+                        }
+                        catch (Exception tokenEx)
+                        {
+                            System.Diagnostics.Debug.WriteLine($"解析JWT token失败: {tokenEx.Message}");
+                        }
+                    }
+                    
+                    // 如果无法从token解析，尝试从全局状态获取
+                    if (GlobalMedicalStaffManager.CurrentLoggedInStaff.Id > 0)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"从全局状态获取医护人员ID: {GlobalMedicalStaffManager.CurrentLoggedInStaff.Id}");
+                        return GlobalMedicalStaffManager.CurrentLoggedInStaff.Id;
+                    }
+                }
+                
+                System.Diagnostics.Debug.WriteLine("无法获取医护人员ID，返回0");
+                return 0;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"获取医护人员ID异常: {ex.Message}");
+                return 0;
+            }
+        }
+        
+        // 获取当前认证令牌
+        private string GetCurrentAuthToken()
+        {
+            try
+            {
+                // 从全局医护人员管理获取当前用户的JWT令牌
+                if (GlobalMedicalStaffManager.CurrentToken != null)
+                {
+                    return GlobalMedicalStaffManager.CurrentToken;
+                }
+                
+                System.Diagnostics.Debug.WriteLine("警告: 当前没有有效的认证令牌，请先登录");
+                return "";
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"获取认证令牌失败: {ex.Message}");
+                return "";
             }
         }
     }

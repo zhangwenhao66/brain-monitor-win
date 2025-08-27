@@ -11,12 +11,12 @@
                 HorizontalAlignment="Center"
                 Width="420">
             <StackPanel Margin="30,30,30,20">
-                <!-- ID/姓名输入 -->
+                <!-- 姓名输入 -->
                 <StackPanel Margin="0,0,0,18">
-                    <TextBlock Text="ID/姓名" Style="{StaticResource ModernLabel}"/>
-                    <TextBox x:Name="IdNameTextBox" 
+                    <TextBlock Text="姓名" Style="{StaticResource ModernLabel}"/>
+                    <TextBox x:Name="NameTextBox" 
                              Style="{StaticResource ModernTextBox}"
-                             ui:ControlHelper.PlaceholderText="请输入ID/姓名"/>
+                             ui:ControlHelper.PlaceholderText="请输入姓名"/>
                 </StackPanel>
                 
                 <!-- 手机号输入 -->

@@ -130,8 +130,12 @@
                     </DataGrid.Resources>
 
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="日期" Binding="{Binding Date}" Width="*" />
-                        <DataGridTextColumn Header="测试结果" Binding="{Binding Result}" Width="*" />
+                        <DataGridTextColumn Header="测试时间" Binding="{Binding TestStartTime, StringFormat=yyyy-MM-dd HH:mm}" Width="200" />
+                        <DataGridTextColumn Header="AD风险值" Binding="{Binding AdRiskValue, StringFormat={}{0:F2}}" Width="100" />
+                        <DataGridTextColumn Header="大脑年龄" Binding="{Binding BrainAge, StringFormat={}{0:F1}}" Width="100" />
+                        <DataGridTextColumn Header="MACA评分" Binding="{Binding MacaScore, StringFormat={}{0:F1}}" Width="100" />
+                        <DataGridTextColumn Header="MMSE评分" Binding="{Binding MmseScore, StringFormat={}{0:F1}}" Width="100" />
+                        <DataGridTextColumn Header="握力值" Binding="{Binding GripStrength, StringFormat={}{0:F1}}" Width="100" />
                     </DataGrid.Columns>
                 </DataGrid>
             </Grid>
@@ -141,6 +145,8 @@
         <Grid Grid.Row="2" Margin="0,15,0,15">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="20" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="20" />
                 <ColumnDefinition Width="Auto" />
@@ -162,14 +168,28 @@
                 </Button.Content>
             </Button>
 
+            <Button x:Name="OpenReportButton"
+                Grid.Column="3"
+                Width="120"
+                Style="{StaticResource ModernButton}"
+                IsEnabled="False"
+                Click="OpenReportButton_Click">
+                <Button.Content>
+                    <StackPanel Orientation="Horizontal">
+                        <ui:FontIcon Glyph="&#xE8A5;" 
+                            FontSize="16" 
+                            Margin="0,0,8,0"/>
+                        <TextBlock Text="打开报告"/>
+                    </StackPanel>
+                </Button.Content>
+            </Button>
+
             <Button x:Name="EnterTestButton"
                 Content="点击进入脑电测试"
-                Grid.Column="3"
+                Grid.Column="5"
                 Width="160"
                 Style="{StaticResource ModernButton}"
                 Click="EnterTestButton_Click" />
-
-            <Grid Grid.Column="3" />
         </Grid>
 
         <!-- 底部导航按钮
