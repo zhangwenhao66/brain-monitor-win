@@ -209,17 +209,14 @@ namespace BrainMonitor.Views
             // 设置进度条宽度
             RiskProgressBar.Width = (riskPercentage / 100) * 200; // 假设最大宽度为200
 
-            // 计算大脑年龄
+            // 计算大脑年龄 - 直接使用测试者的实际年龄
             int actualAge = int.TryParse(currentTester.Age, out int parsedAge) ? parsedAge : 30;
-            int brainAge = CalculateBrainAge(mocaScore, mmseScore, actualAge);
+            int brainAge = actualAge; // 直接使用实际年龄
             BrainAgeText.Text = $"{brainAge}岁";
             
-            int ageDifference = brainAge - actualAge;
-            if (ageDifference > 0)
-            {
-                BrainAgeComparisonText.Text = $"高于实际年龄{ageDifference}岁";
-                BrainAgeComparisonText.Foreground = System.Windows.Media.Brushes.Red;
-            }
+            // 年龄差异为0，显示与实际年龄相符
+            BrainAgeComparisonText.Text = "与实际年龄相符";
+            BrainAgeComparisonText.Foreground = System.Windows.Media.Brushes.Gray;
             
 
             
@@ -252,16 +249,8 @@ namespace BrainMonitor.Views
                 RiskProgressBar.Width = (adRiskIndex / 100) * 200; // 假设最大宽度为200
             }
             
-            if (ageDifference < 0)
-            {
-                BrainAgeComparisonText.Text = $"低于实际年龄{Math.Abs(ageDifference)}岁";
-                BrainAgeComparisonText.Foreground = System.Windows.Media.Brushes.Green;
-            }
-            else
-            {
-                BrainAgeComparisonText.Text = "与实际年龄相符";
-                BrainAgeComparisonText.Foreground = System.Windows.Media.Brushes.Gray;
-            }
+            // 由于大脑年龄直接使用实际年龄，所以总是显示"与实际年龄相符"
+            // 这部分逻辑已经在上面处理了，这里不需要重复设置
 
             // 生成报告分析文本
             GenerateReportAnalysis();
@@ -293,17 +282,7 @@ namespace BrainMonitor.Views
             return Math.Min(100, (mocaRisk + mmseRisk) / 2);
         }
 
-        private int CalculateBrainAge(double? moca, double? mmse, int actualAge)
-        {
-            // 简化的大脑年龄计算算法
-            double mocaValue = moca ?? 25; // 如果为空，使用默认值25
-            double mmseValue = mmse ?? 25; // 如果为空，使用默认值25
-            double averageScore = (mocaValue + mmseValue) / 2;
-            double normalScore = 27; // 正常平均分
-            
-            double ageFactor = (normalScore - averageScore) * 2;
-            return Math.Max(20, actualAge + (int)ageFactor);
-        }
+
 
         private void GenerateReportAnalysis()
         {

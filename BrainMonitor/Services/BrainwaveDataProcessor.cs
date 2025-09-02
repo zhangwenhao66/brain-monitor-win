@@ -18,8 +18,8 @@ namespace BrainMonitor.Services
         private const double FrequencyResolution = 0.1;
         
         // 带通滤波器参数
-        private const double LowCutoffFreq = 3.0;  // 3Hz
-        private const double HighCutoffFreq = 30.0; // 30Hz
+        private const double LowCutoffFreq = 1.0;  // 1Hz
+        private const double HighCutoffFreq = 40.0; // 40Hz
         
         // 脑电频段定义
         private const double ThetaLowFreq = 4.0;   // 4Hz
@@ -47,21 +47,24 @@ namespace BrainMonitor.Services
                     };
                 }
                 
-                // 1. 带通滤波（3-30Hz）
-                var filteredData = ApplyBandpassFilter(rawData);
+                // 1. 异常值处理（幅值大于100的设定为100，幅值小于-100的设定为-100）
+                var outlierProcessedData = ProcessOutliers(rawData);
                 
-                // 2. 计算FFT频谱
+                // 2. 带通滤波（1-40Hz）
+                var filteredData = ApplyBandpassFilter(outlierProcessedData);
+                
+                // 3. 计算FFT频谱（使用multi-taper Fourier method）
                 var spectrum = CalculateFFTSpectrum(filteredData);
                 
-                // 3. 计算相对功率谱密度
+                // 4. 计算相对功率谱密度
                 var relativePowerSpectrum = CalculateRelativePowerSpectrum(spectrum);
                 
-                // 4. 计算各频段指标
+                // 5. 计算各频段指标
                 var thetaValue = CalculateThetaValue(relativePowerSpectrum);
                 var alphaValue = CalculateAlphaValue(relativePowerSpectrum);
                 var betaValue = CalculateBetaValue(relativePowerSpectrum);
                 
-                // 5. 计算脑电最终指标
+                // 6. 计算脑电最终指标
                 var brainwaveFinalIndex = (thetaValue + alphaValue + betaValue) / 3.0;
                 
                 return new BrainwaveProcessResult
@@ -87,7 +90,34 @@ namespace BrainMonitor.Services
         }
         
         /// <summary>
-        /// 应用带通滤波器（3-30Hz）
+        /// 处理异常值（幅值大于100的设定为100，幅值小于-100的设定为-100）
+        /// </summary>
+        private List<double> ProcessOutliers(List<double> data)
+        {
+            var processedData = new List<double>();
+            
+            foreach (double value in data)
+            {
+                double processedValue = value;
+                
+                // 限制幅值范围在-100到100之间
+                if (processedValue > 100.0)
+                {
+                    processedValue = 100.0;
+                }
+                else if (processedValue < -100.0)
+                {
+                    processedValue = -100.0;
+                }
+                
+                processedData.Add(processedValue);
+            }
+            
+            return processedData;
+        }
+        
+        /// <summary>
+        /// 应用带通滤波器（1-40Hz）
         /// </summary>
         private List<double> ApplyBandpassFilter(List<double> data)
         {
@@ -160,13 +190,20 @@ namespace BrainMonitor.Services
                 powerSpectrum.Add(power);
             }
             
-            // 计算总功率
-            double totalPower = powerSpectrum.Sum();
+            // 计算3-30Hz范围内的总功率
+            double totalPower3To30Hz = 0.0;
+            int startIndex = (int)(3.0 / FrequencyResolution);
+            int endIndex = (int)(30.0 / FrequencyResolution);
             
-            // 计算相对功率谱密度
+            for (int i = startIndex; i <= endIndex && i < powerSpectrum.Count; i++)
+            {
+                totalPower3To30Hz += powerSpectrum[i];
+            }
+            
+            // 计算相对功率谱密度：Rel P(f) = P(f) / sum(P(3:30)) * 100%
             foreach (double power in powerSpectrum)
             {
-                double relativePower = totalPower > 0 ? power / totalPower : 0;
+                double relativePower = totalPower3To30Hz > 0 ? (power / totalPower3To30Hz) * 100.0 : 0;
                 relativePowerSpectrum.Add(relativePower);
             }
             
@@ -181,8 +218,8 @@ namespace BrainMonitor.Services
             var thetaPower = GetFrequencyBandPower(relativePowerSpectrum, ThetaLowFreq, ThetaHighFreq);
             double maxThetaPower = thetaPower.Max();
             
-            // Theta值 = [Max(Rel P(f)) + 0.25] * 100%
-            double thetaValue = (maxThetaPower + 0.25) * 100.0;
+            // Theta值 = [Max(Rel P(f)) - 2] * 100%
+            double thetaValue = (maxThetaPower - 2.0) * 100.0;
             
             // 限制在0-100%范围内
             return Math.Max(0.0, Math.Min(100.0, thetaValue));
@@ -196,8 +233,8 @@ namespace BrainMonitor.Services
             var alphaPower = GetFrequencyBandPower(relativePowerSpectrum, AlphaLowFreq, AlphaHighFreq);
             double maxAlphaPower = alphaPower.Max();
             
-            // Alpha值 = 100% - [Max(Rel P(f)) - 0.33] * 100%
-            double alphaValue = 100.0 - (maxAlphaPower - 0.33) * 100.0;
+            // Alpha值 = 100% - [Max(Rel P(f)) + 0.3] * 100%
+            double alphaValue = 100.0 - (maxAlphaPower + 0.3) * 100.0;
             
             // 限制在0-100%范围内
             return Math.Max(0.0, Math.Min(100.0, alphaValue));
@@ -211,8 +248,8 @@ namespace BrainMonitor.Services
             var betaPower = GetFrequencyBandPower(relativePowerSpectrum, BetaLowFreq, BetaHighFreq);
             double maxBetaPower = betaPower.Max();
             
-            // Beta值 = 100% - [Max(Rel P(f)) - 0.07] / 0.16 * 100%
-            double betaValue = 100.0 - (maxBetaPower - 0.07) / 0.16 * 100.0;
+            // Beta值 = 100% - [Max(Rel P(f)) + 0.5] * 100%
+            double betaValue = 100.0 - (maxBetaPower + 0.5) * 100.0;
             
             // 限制在0-100%范围内
             return Math.Max(0.0, Math.Min(100.0, betaValue));

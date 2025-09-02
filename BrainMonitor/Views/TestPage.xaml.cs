@@ -2714,10 +2714,10 @@ namespace BrainMonitor.Views
         {
             try
             {
-                // 计算脑电最终指标
+                // 计算脑电最终指标 = Theta值/3 + Alpha值/3 + Beta值/3
                 double brainwaveFinalIndex = (brainwaveThetaValue / 3.0) + (brainwaveAlphaValue / 3.0) + (brainwaveBetaValue / 3.0);
                 
-                // 计算量表分数
+                // 计算量表分数 = 1 - [(MMSE分数/30 * 100% + MoCA分数/30 * 100%) / 2]
                 double scaleScore = 0.0;
                 int scaleCount = 0;
                 
@@ -2740,8 +2740,21 @@ namespace BrainMonitor.Views
                 // 计算平均量表分数
                 double averageScaleScore = scaleCount > 0 ? scaleScore / scaleCount : 0.0;
                 
-                // 计算AD风险指数：AD风险指数 = (脑电最终指标/2 + 量表分数/2)
-                double adRiskIndex = (brainwaveFinalIndex / 2.0) + (averageScaleScore / 2.0);
+                // 量表分数 = 1 - 平均量表分数（越接近0%越正常，越接近100%风险越高）
+                double finalScaleScore = 100.0 - averageScaleScore;
+                
+                // 计算AD风险指数
+                double adRiskIndex;
+                if (scaleCount > 0)
+                {
+                    // 如果有量表数据：AD风险指数 = (脑电最终指标/2 + 量表分数/2)
+                    adRiskIndex = (brainwaveFinalIndex / 2.0) + (finalScaleScore / 2.0);
+                }
+                else
+                {
+                    // 如果只有脑电数据：AD风险指数 = 脑电最终指标
+                    adRiskIndex = brainwaveFinalIndex;
+                }
                 
                 System.Diagnostics.Debug.WriteLine($"AD风险指数计算:");
                 System.Diagnostics.Debug.WriteLine($"  Theta值: {brainwaveThetaValue:F2}%");
@@ -2749,6 +2762,7 @@ namespace BrainMonitor.Views
                 System.Diagnostics.Debug.WriteLine($"  Beta值: {brainwaveBetaValue:F2}%");
                 System.Diagnostics.Debug.WriteLine($"  脑电最终指标: {brainwaveFinalIndex:F2}%");
                 System.Diagnostics.Debug.WriteLine($"  平均量表分数: {averageScaleScore:F2}%");
+                System.Diagnostics.Debug.WriteLine($"  最终量表分数: {finalScaleScore:F2}%");
                 System.Diagnostics.Debug.WriteLine($"  AD风险指数: {adRiskIndex:F2}");
                 
                 return adRiskIndex;

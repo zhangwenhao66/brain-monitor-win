@@ -94,7 +94,7 @@ router.post('/', authenticateToken, async (req, res) => {
                                               (closedEyesResult.alpha_value / 3.0) + 
                                               (closedEyesResult.beta_value / 3.0);
                     
-                    // 计算量表分数 = (MMSE分数/30 * 100% + MoCA分数/30 * 100%) / 2
+                    // 计算量表分数 = 1 - [(MMSE分数/30 * 100% + MoCA分数/30 * 100%) / 2]
                     let scaleScore = 0;
                     let scaleCount = 0;
                     
@@ -110,8 +110,17 @@ router.post('/', authenticateToken, async (req, res) => {
                     
                     const averageScaleScore = scaleCount > 0 ? scaleScore / scaleCount : 0;
                     
-                    // 计算AD风险指数 = (脑电最终指标/2 + 量表分数/2)
-                    adRiskValue = (brainwaveFinalIndex / 2.0) + (averageScaleScore / 2.0);
+                    // 量表分数 = 1 - 平均量表分数（越接近0%越正常，越接近100%风险越高）
+                    const finalScaleScore = 100.0 - averageScaleScore;
+                    
+                    // 计算AD风险指数
+                    if (scaleCount > 0) {
+                        // 如果有量表数据：AD风险指数 = (脑电最终指标/2 + 量表分数/2)
+                        adRiskValue = (brainwaveFinalIndex / 2.0) + (finalScaleScore / 2.0);
+                    } else {
+                        // 如果只有脑电数据：AD风险指数 = 脑电最终指标
+                        adRiskValue = brainwaveFinalIndex;
+                    }
                 }
             } catch (error) {
                 console.error('计算AD风险值错误:', error);
