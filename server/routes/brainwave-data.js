@@ -89,35 +89,14 @@ router.post('/upload', authenticateToken, upload.single('csvFile'), async (req, 
         // 删除临时文件
         fs.unlinkSync(csvFile.path);
 
-        // 首先插入脑电波数据记录
-        const insertSql = `
-            INSERT INTO brainwave_data 
-            (data_type, timestamp, csv_file_path, channel, sampling_rate) 
-            VALUES (?, ?, ?, ?, ?)
-        `;
-
-        const channel = 1; // 默认通道
-        const samplingRate = 520; // 默认采样率
-
-        const brainwaveResult = await query(insertSql, [
-            dataType,
-            timestamp,
-            relativePath,
-            channel,
-            samplingRate
-        ]);
-
-        const brainwaveDataId = brainwaveResult.insertId;
-
-        // 然后创建测试结果记录，引用脑电波数据
+        // 直接创建测试结果记录
         const testResultSql = `
             INSERT INTO test_results 
-            (result_type, analysis_result, brainwave_data_id, created_at) 
-            VALUES (?, ?, ?, NOW())
+            (csv_file_path, result, created_at) 
+            VALUES (?, ?, NOW())
         `;
 
-        const analysisResult = `脑电波数据文件: ${relativePath}`;
-        const testResultResult = await query(testResultSql, [dataType, analysisResult, brainwaveDataId]);
+        const testResultResult = await query(testResultSql, [relativePath, dataType]);
         const testResultId = testResultResult.insertId;
 
         res.json({
@@ -125,7 +104,6 @@ router.post('/upload', authenticateToken, upload.single('csvFile'), async (req, 
             message: '成功上传脑电波数据CSV文件',
             data: {
                 testResultId,
-                brainwaveDataId,
                 dataType,
                 csvFilePath: relativePath,
                 fileName: csvFile.filename
@@ -143,6 +121,55 @@ router.post('/upload', authenticateToken, upload.single('csvFile'), async (req, 
             });
         }
         
+        res.status(500).json({
+            success: false,
+            message: '服务器内部错误'
+        });
+    }
+});
+
+// 更新测试结果表中的Theta、Alpha、Beta值
+router.put('/update-result', authenticateToken, async (req, res) => {
+    try {
+        const { testResultId, thetaValue, alphaValue, betaValue } = req.body;
+        
+        // 验证必填字段
+        if (!testResultId || thetaValue === undefined || alphaValue === undefined || betaValue === undefined) {
+            return res.status(400).json({
+                success: false,
+                message: '请提供测试结果ID和所有脑电指标值'
+            });
+        }
+        
+        // 更新test_results表
+        const updateSql = `
+            UPDATE test_results 
+            SET theta_value = ?, alpha_value = ?, beta_value = ?
+            WHERE id = ?
+        `;
+        
+        const result = await query(updateSql, [thetaValue, alphaValue, betaValue, testResultId]);
+        
+        if (result.affectedRows > 0) {
+            res.json({
+                success: true,
+                message: '成功更新脑电指标数据',
+                data: {
+                    testResultId,
+                    thetaValue,
+                    alphaValue,
+                    betaValue
+                }
+            });
+        } else {
+            res.status(404).json({
+                success: false,
+                message: '未找到指定的测试结果记录'
+            });
+        }
+        
+    } catch (error) {
+        console.error('更新测试结果错误:', error);
         res.status(500).json({
             success: false,
             message: '服务器内部错误'

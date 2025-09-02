@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using BrainMonitor.Models;
+using BrainMonitor.Services;
 
 namespace BrainMonitor.Views
 {
@@ -44,6 +45,12 @@ namespace BrainMonitor.Views
         
         // 存储当前测试记录ID
         private int currentTestRecordId = 0;
+        
+        // 存储闭眼测试的原始数据
+        private List<double> closedEyesRawData = new List<double>();
+        
+        // 脑电数据处理器
+        private BrainwaveDataProcessor brainwaveProcessor;
         
         // 测试流程步骤 - 现在有8个步骤
         private readonly string[] instructions = new string[]
@@ -99,6 +106,9 @@ namespace BrainMonitor.Views
             
             // 初始化取消令牌
             cancellationTokenSource = new CancellationTokenSource();
+            
+            // 初始化脑电数据处理器
+            brainwaveProcessor = new BrainwaveDataProcessor();
             
             InitializeTimers();
             StartTestProcess();
@@ -198,41 +208,49 @@ namespace BrainMonitor.Views
                 instruction = string.Format(instruction, FormatTime(countdownSeconds));
                 InstructionText.Text = instruction;
                 
-                // 倒计时结束
-                if (countdownSeconds <= 0)
-                {
-                    countdownTimer.Stop();
-                    isCountingDown = false;
-                    
-                    // 停止记录数据并保存
-                    if (currentStep == 6)
+                                    // 倒计时结束
+                    if (countdownSeconds <= 0)
                     {
-                        // 闭眼测试完成，等待文件上传完成后再触发事件
-                        _ = Task.Run(async () => {
-                            await StopDataRecordingAndSave();
-                            
-                            // 等待一小段时间确保文件上传完成
-                            await Task.Delay(1000);
-                            
-                                                    // 在UI线程中触发事件
-                        Dispatcher.Invoke(() => {
-                            var testResultsArgs = new TestResultsEventArgs
-                            {
-                                OpenEyesResultId = openEyesResultId,
-                                ClosedEyesResultId = closedEyesResultId
-                            };
-                            TestCompletedWithResults?.Invoke(this, testResultsArgs);
-                        });
-                        });
+                        countdownTimer.Stop();
+                        isCountingDown = false;
+                        
+                        // 停止记录数据并保存
+                        if (currentStep == 6)
+                        {
+                            // 闭眼测试完成，等待文件上传完成后再触发事件
+                            _ = Task.Run(async () => {
+                                await StopDataRecordingAndSave();
+                                
+                                // 等待一小段时间确保文件上传完成
+                                await Task.Delay(1000);
+                                
+                                // 处理闭眼脑电数据
+                                var brainwaveResult = ProcessClosedEyesBrainwaveData();
+                                
+                                // 在UI线程中触发事件
+                                Dispatcher.Invoke(() => {
+                                    var testResultsArgs = new TestResultsEventArgs
+                                    {
+                                        OpenEyesResultId = openEyesResultId,
+                                        ClosedEyesResultId = closedEyesResultId,
+                                        ThetaValue = brainwaveResult.ThetaValue,
+                                        AlphaValue = brainwaveResult.AlphaValue,
+                                        BetaValue = brainwaveResult.BetaValue,
+                                        BrainwaveFinalIndex = brainwaveResult.BrainwaveFinalIndex,
+                                        ClosedEyesData = closedEyesRawData
+                                    };
+                                    TestCompletedWithResults?.Invoke(this, testResultsArgs);
+                                });
+                            });
+                        }
+                        else
+                        {
+                            // 睁眼测试，异步保存但不触发事件
+                            _ = Task.Run(async () => await StopDataRecordingAndSave());
+                        }
+                        
+                        audioWaitTimer.Start();
                     }
-                    else
-                    {
-                        // 睁眼测试，异步保存但不触发事件
-                        _ = Task.Run(async () => await StopDataRecordingAndSave());
-                    }
-                    
-                    audioWaitTimer.Start();
-                }
             }
         }
         
@@ -243,6 +261,12 @@ namespace BrainMonitor.Views
             testStartTime = DateTime.Now;
             isRecordingData = true;
             dataRecordTimer.Start();
+            
+            // 如果是闭眼测试，清空闭眼数据存储
+            if (currentStep == 6) // 闭眼测试步骤
+            {
+                closedEyesRawData.Clear();
+            }
         }
         
         // 停止记录数据并保存
@@ -267,6 +291,12 @@ namespace BrainMonitor.Views
                 if (brainwaveData != double.MinValue) // 检查是否获取到有效数据
                 {
                     currentTestData.Add(brainwaveData.ToString("F2"));
+                    
+                    // 如果是闭眼测试，同时存储到闭眼数据中
+                    if (currentStep == 6) // 闭眼测试步骤
+                    {
+                        closedEyesRawData.Add(brainwaveData);
+                    }
                 }
                 // 如果没有获取到有效数据，不记录任何内容，等待下一次数据
             }
@@ -307,20 +337,12 @@ namespace BrainMonitor.Views
                 string staffName = GetCurrentStaffName();
                 string testerName = GetCurrentTesterName();
                 
-                System.Diagnostics.Debug.WriteLine($"=== 保存数据调试信息 ===");
-                System.Diagnostics.Debug.WriteLine($"机构ID: {institutionId}");
-                System.Diagnostics.Debug.WriteLine($"医护人员姓名: {staffName}");
-                System.Diagnostics.Debug.WriteLine($"测试者姓名: {testerName}");
-                System.Diagnostics.Debug.WriteLine($"测试类型: {currentTestType}");
-                System.Diagnostics.Debug.WriteLine($"数据点数量: {currentTestData.Count}");
-                
                 // 创建目录
                 string baseDir = "data";
                 string institutionDir = Path.Combine(baseDir, institutionId);
                 string staffDir = Path.Combine(institutionDir, staffName);
                 string testerDir = Path.Combine(staffDir, testerName);
                 
-                System.Diagnostics.Debug.WriteLine($"创建目录: {testerDir}");
                 Directory.CreateDirectory(testerDir);
                 
                 // 生成文件名
@@ -328,20 +350,14 @@ namespace BrainMonitor.Views
                 string fileName = $"{timestamp}_{currentTestType}.csv";
                 string filePath = Path.Combine(testerDir, fileName);
                 
-                System.Diagnostics.Debug.WriteLine($"文件路径: {filePath}");
-                
                 // 写入CSV文件
                 File.WriteAllLines(filePath, currentTestData, Encoding.UTF8);
-                System.Diagnostics.Debug.WriteLine($"CSV文件写入完成，大小: {new FileInfo(filePath).Length} 字节");
                 
                 // 上传文件到后端服务器
-                System.Diagnostics.Debug.WriteLine($"开始上传文件到后端...");
                 await UploadFileToServer(filePath, fileName, institutionId, staffName, testerName);
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"保存数据失败: {ex.Message}");
-                System.Diagnostics.Debug.WriteLine($"异常堆栈: {ex.StackTrace}");
                 Dispatcher.Invoke(() =>
                 {
                     ModernMessageBoxWindow.Show($"保存数据失败: {ex.Message}", "错误", ModernMessageBoxWindow.MessageBoxType.Error);
@@ -354,9 +370,6 @@ namespace BrainMonitor.Views
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine($"=== 上传文件调试信息 ===");
-                System.Diagnostics.Debug.WriteLine($"文件路径: {filePath}");
-                System.Diagnostics.Debug.WriteLine($"文件名: {fileName}");
                 // 检查文件是否存在
                 if (!File.Exists(filePath))
                 {
@@ -411,7 +424,7 @@ namespace BrainMonitor.Views
                             try
                             {
                                 var responseData = System.Text.Json.JsonSerializer.Deserialize<UploadResponse>(responseContent);
-                                if (responseData.success && responseData.data != null)
+                                if (responseData.data != null)
                                 {
                                     // 根据数据类型存储测试结果ID
                                     if (currentTestType == "睁眼")
@@ -421,6 +434,12 @@ namespace BrainMonitor.Views
                                     else if (currentTestType == "闭眼")
                                     {
                                         closedEyesResultId = responseData.data.testResultId;
+                                    }
+                                    
+                                    // 如果是闭眼测试，需要更新test_results表中的Theta、Alpha、Beta值
+                                    if (currentTestType == "闭眼" && responseData.data.testResultId > 0)
+                                    {
+                                        await UpdateTestResultWithBrainwaveData(responseData.data.testResultId);
                                     }
                                 }
                             }
@@ -432,11 +451,11 @@ namespace BrainMonitor.Views
                     }
                 }
                 
-                            }
-                catch (Exception)
-                {
-                    // 忽略上传异常
-                }
+            }
+            catch (Exception)
+            {
+                // 忽略上传异常
+            }
         }
         
         // 文件上传不需要测试记录ID
@@ -457,8 +476,6 @@ namespace BrainMonitor.Views
         {
             try
             {
-                System.Diagnostics.Debug.WriteLine("=== 创建测试记录 ===");
-                
                 // 获取必要信息
                 string institutionId = GetCurrentInstitutionId();
                 string staffName = GetCurrentStaffName();
@@ -466,15 +483,8 @@ namespace BrainMonitor.Views
                 int medicalStaffId = GetCurrentMedicalStaffId();
                 string token = GetCurrentAuthToken();
                 
-                System.Diagnostics.Debug.WriteLine($"机构ID: {institutionId}");
-                System.Diagnostics.Debug.WriteLine($"医护人员姓名: {staffName}");
-                System.Diagnostics.Debug.WriteLine($"测试者姓名: {testerName}");
-                System.Diagnostics.Debug.WriteLine($"医护人员ID: {medicalStaffId}");
-                System.Diagnostics.Debug.WriteLine($"JWT令牌: {(string.IsNullOrEmpty(token) ? "空" : "已获取")}");
-                
                 if (string.IsNullOrEmpty(token))
                 {
-                    System.Diagnostics.Debug.WriteLine("错误：无法获取JWT令牌");
                     return 0;
                 }
                 
@@ -490,8 +500,6 @@ namespace BrainMonitor.Views
                     testStatus = "进行中"
                 };
                 
-                System.Diagnostics.Debug.WriteLine($"准备创建测试记录: {System.Text.Json.JsonSerializer.Serialize(testRecordData)}");
-                
                 // 调用后端API创建测试记录
                 using (var httpClient = new System.Net.Http.HttpClient())
                 {
@@ -505,7 +513,7 @@ namespace BrainMonitor.Views
                     if (response.IsSuccessStatusCode)
                     {
                         var responseContent = await response.Content.ReadAsStringAsync();
-                        System.Diagnostics.Debug.WriteLine($"测试记录创建成功: {responseContent}");
+        
                         
                         // 解析响应获取测试记录ID
                         try
@@ -513,42 +521,24 @@ namespace BrainMonitor.Views
                             var responseData = System.Text.Json.JsonSerializer.Deserialize<TestRecordResponse>(responseContent);
                             if (responseData.success && responseData.data != null)
                             {
-                                System.Diagnostics.Debug.WriteLine($"测试记录ID: {responseData.data.testRecordId}");
                                 return responseData.data.testRecordId;
                             }
                         }
                         catch (Exception parseEx)
                         {
-                            System.Diagnostics.Debug.WriteLine($"解析响应异常: {parseEx.Message}");
+                            // 解析异常
                         }
                     }
                     else
                     {
-                        var errorContent = await response.Content.ReadAsStringAsync();
-                        System.Diagnostics.Debug.WriteLine($"创建测试记录失败: {response.StatusCode} - {errorContent}");
-                        
-                        // 尝试解析错误信息
-                        try
-                        {
-                            var errorData = System.Text.Json.JsonSerializer.Deserialize<TestRecordResponse>(errorContent);
-                            if (errorData.message != null)
-                            {
-                                System.Diagnostics.Debug.WriteLine($"错误详情: {errorData.message}");
-                            }
-                        }
-                        catch (Exception parseEx)
-                        {
-                            System.Diagnostics.Debug.WriteLine($"解析错误信息失败: {parseEx.Message}");
-                        }
+                        // 创建测试记录失败
                     }
                 }
                 
-                System.Diagnostics.Debug.WriteLine("测试记录创建失败，返回ID: 0");
                 return 0;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"创建测试记录异常: {ex.Message}");
                 return 0;
             }
         }
@@ -581,7 +571,7 @@ namespace BrainMonitor.Views
                                 if (tokenData.ContainsKey("userId") && tokenData["userId"].ValueKind != JsonValueKind.Null)
                                 {
                                     var userId = tokenData["userId"].GetInt32();
-                                    System.Diagnostics.Debug.WriteLine($"从JWT token解析出医护人员ID: {userId}");
+                    
                                     return userId;
                                 }
                             }
@@ -652,6 +642,97 @@ namespace BrainMonitor.Views
             // 这里需要从父窗口或全局状态获取当前测试者信息
             // 暂时使用默认值
             return currentTester.Name;
+        }
+        
+        /// <summary>
+        /// 处理闭眼脑电数据并计算相关指标
+        /// </summary>
+        /// <returns>脑电处理结果</returns>
+        private BrainwaveProcessResult ProcessClosedEyesBrainwaveData()
+        {
+            try
+            {
+                if (closedEyesRawData == null || closedEyesRawData.Count == 0)
+                {
+                    return new BrainwaveProcessResult
+                    {
+                        Success = false,
+                        ErrorMessage = "闭眼测试数据为空"
+                    };
+                }
+                
+                // 使用脑电数据处理器处理数据
+                var result = brainwaveProcessor.ProcessClosedEyesData(closedEyesRawData);
+                
+                return result;
+            }
+            catch (Exception ex)
+            {
+                return new BrainwaveProcessResult
+                {
+                    Success = false,
+                    ErrorMessage = $"处理异常: {ex.Message}"
+                };
+            }
+        }
+        
+        /// <summary>
+        /// 更新test_results表中的Theta、Alpha、Beta值
+        /// </summary>
+        /// <param name="testResultId">测试结果ID</param>
+        /// <returns>是否更新成功</returns>
+        private async Task<bool> UpdateTestResultWithBrainwaveData(int testResultId)
+        {
+            try
+            {
+                // 处理闭眼脑电数据
+                var brainwaveResult = ProcessClosedEyesBrainwaveData();
+                if (!brainwaveResult.Success)
+                {
+                    return false;
+                }
+                
+                // 获取JWT令牌
+                string token = GetCurrentAuthToken();
+                if (string.IsNullOrEmpty(token))
+                {
+                    return false;
+                }
+                
+                // 创建HTTP客户端
+                using (var httpClient = new System.Net.Http.HttpClient())
+                {
+                    httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                    
+                    // 准备更新数据
+                    var updateData = new
+                    {
+                        testResultId = testResultId,
+                        thetaValue = brainwaveResult.ThetaValue,
+                        alphaValue = brainwaveResult.AlphaValue,
+                        betaValue = brainwaveResult.BetaValue
+                    };
+                    
+                    var jsonContent = System.Text.Json.JsonSerializer.Serialize(updateData);
+                    var content = new System.Net.Http.StringContent(jsonContent, System.Text.Encoding.UTF8, "application/json");
+                    
+                    // 发送更新请求
+                    var response = await httpClient.PutAsync("http://localhost:3000/api/brainwave-data/update-result", content);
+                    
+                    if (response.IsSuccessStatusCode)
+                    {
+                        return true;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
         }
 
         private void NextStep()

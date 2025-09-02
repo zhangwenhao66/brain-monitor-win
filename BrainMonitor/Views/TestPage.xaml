@@ -266,12 +266,12 @@
                     </Grid.ColumnDefinitions>
                     
                     <TextBlock Grid.Column="0" 
-                        Text="MACA评分:" 
+                        Text="MoCA评分:" 
                         Style="{StaticResource ModernLabel}"
                         VerticalAlignment="Center" 
                         Margin="0,0,10,0"/>
                     <TextBox Grid.Column="1" 
-                        x:Name="MacaScoreTextBox"
+                        x:Name="MocaScoreTextBox"
                         Style="{StaticResource ModernTextBox}" 
                         ui:ControlHelper.PlaceholderText="0-30分"
                         Height="35"/>

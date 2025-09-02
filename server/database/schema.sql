@@ -57,11 +57,13 @@ CREATE TABLE test_records (
     test_start_time TIMESTAMP NOT NULL COMMENT '测试开始时间',
     test_end_time TIMESTAMP COMMENT '测试结束时间',
     test_status ENUM('进行中', '已完成', '已取消') DEFAULT '进行中' COMMENT '测试状态',
-    maca_score DECIMAL(5,2) COMMENT 'MACA评分',
+    moca_score DECIMAL(5,2) COMMENT 'MoCA评分',
     mmse_score DECIMAL(5,2) COMMENT 'MMSE评分',
     grip_strength DECIMAL(8,2) COMMENT '握力值',
     ad_risk_value DECIMAL(5,2) COMMENT 'AD风险值',
     brain_age DECIMAL(5,2) COMMENT '大脑年龄',
+    open_eyes_result_id INT NULL COMMENT '睁眼测试结果ID',
+    closed_eyes_result_id INT NULL COMMENT '闭眼测试结果ID',
     notes TEXT COMMENT '备注',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -70,38 +72,25 @@ CREATE TABLE test_records (
     FOREIGN KEY (institution_id) REFERENCES institutions(id) ON DELETE CASCADE
 );
 
--- 脑电波数据表
-CREATE TABLE brainwave_data (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    test_record_id INT NOT NULL COMMENT '测试记录ID',
-    data_type ENUM('睁眼', '闭眼') NOT NULL COMMENT '数据类型',
-    timestamp TIMESTAMP NOT NULL COMMENT '数据时间戳',
-    csv_file_path VARCHAR(500) NOT NULL COMMENT 'CSV文件路径',
-    channel INT DEFAULT 1 COMMENT '通道号',
-    sampling_rate INT DEFAULT 520 COMMENT '采样率',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (test_record_id) REFERENCES test_records(id) ON DELETE CASCADE
-);
-
 -- 测试结果表
 CREATE TABLE test_results (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    test_record_id INT NOT NULL COMMENT '测试记录ID',
-    result_type ENUM('睁眼', '闭眼', '综合') NOT NULL COMMENT '结果类型',
-    alpha_power DECIMAL(10,4) COMMENT 'Alpha波功率',
-    beta_power DECIMAL(10,4) COMMENT 'Beta波功率',
-    theta_power DECIMAL(10,4) COMMENT 'Theta波功率',
-    delta_power DECIMAL(10,4) COMMENT 'Delta波功率',
-    gamma_power DECIMAL(10,4) COMMENT 'Gamma波功率',
-    total_power DECIMAL(10,4) COMMENT '总功率',
-    dominant_frequency DECIMAL(8,2) COMMENT '主频率',
-    coherence_score DECIMAL(5,2) COMMENT '相干性评分',
-    attention_score DECIMAL(5,2) COMMENT '注意力评分',
-    relaxation_score DECIMAL(5,2) COMMENT '放松度评分',
-    analysis_result TEXT COMMENT '分析结果',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (test_record_id) REFERENCES test_records(id) ON DELETE CASCADE
+    csv_file_path VARCHAR(500) NOT NULL COMMENT 'CSV文件路径',
+    theta_value DECIMAL(5,2) COMMENT 'Theta值',
+    alpha_value DECIMAL(5,2) COMMENT 'Alpha值',
+    beta_value DECIMAL(5,2) COMMENT 'Beta值',
+    result ENUM('睁眼', '闭眼') NOT NULL COMMENT '结果类型',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- 添加外键约束
+ALTER TABLE test_records 
+ADD CONSTRAINT fk_test_records_open_eyes_result 
+FOREIGN KEY (open_eyes_result_id) REFERENCES test_results(id) ON DELETE SET NULL;
+
+ALTER TABLE test_records 
+ADD CONSTRAINT fk_test_records_closed_eyes_result 
+FOREIGN KEY (closed_eyes_result_id) REFERENCES test_results(id) ON DELETE SET NULL;
 
 -- 插入默认机构数据（密码：123456）
 INSERT INTO institutions (institution_id, institution_name, password, contact_person, contact_phone, address) VALUES
@@ -130,7 +119,6 @@ CREATE INDEX idx_testers_institution ON testers(institution_id);
 CREATE INDEX idx_test_records_tester ON test_records(tester_id);
 CREATE INDEX idx_test_records_medical_staff ON test_records(medical_staff_id);
 CREATE INDEX idx_test_records_institution ON test_records(institution_id);
-CREATE INDEX idx_brainwave_data_test_record ON brainwave_data(test_record_id);
-CREATE INDEX idx_brainwave_data_timestamp ON brainwave_data(timestamp);
-CREATE INDEX idx_test_results_test_record ON test_results(test_record_id);
+CREATE INDEX idx_test_records_open_eyes_result ON test_records(open_eyes_result_id);
+CREATE INDEX idx_test_records_closed_eyes_result ON test_records(closed_eyes_result_id);
 

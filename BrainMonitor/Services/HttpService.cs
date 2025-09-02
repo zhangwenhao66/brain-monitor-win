@@ -365,8 +365,8 @@ namespace BrainMonitor.Services
         [JsonProperty("test_status")]
         public string TestStatus { get; set; } = string.Empty;
         
-        [JsonProperty("maca_score")]
-        public double? MacaScore { get; set; }
+        [JsonProperty("moca_score")]
+        public double? MocaScore { get; set; }
         
         [JsonProperty("mmse_score")]
         public double? MmseScore { get; set; }
@@ -551,5 +551,95 @@ namespace BrainMonitor.Services
         
         [JsonProperty("totalPages")]
         public int TotalPages { get; set; }
+    }
+
+    // 报告数据响应模型
+    public class ReportData
+    {
+        [JsonProperty("testRecord")]
+        public ReportTestRecord TestRecord { get; set; } = new ReportTestRecord();
+        
+        [JsonProperty("closedEyesResult")]
+        public ReportTestResult? ClosedEyesResult { get; set; }
+        
+        [JsonProperty("openEyesResult")]
+        public ReportTestResult? OpenEyesResult { get; set; }
+    }
+    
+    // 报告测试记录模型（完整的测试记录信息）
+    public class ReportTestRecord
+    {
+        [JsonProperty("id")]
+        public int Id { get; set; }
+        
+        [JsonProperty("tester_id")]
+        public int TesterId { get; set; }
+        
+        [JsonProperty("medical_staff_id")]
+        public int MedicalStaffId { get; set; }
+        
+        [JsonProperty("institution_id")]
+        public int InstitutionId { get; set; }
+        
+        [JsonProperty("test_start_time")]
+        public DateTime TestStartTime { get; set; }
+        
+        [JsonProperty("test_status")]
+        public string TestStatus { get; set; } = string.Empty;
+        
+        [JsonProperty("moca_score")]
+        public double? MocaScore { get; set; }
+        
+        [JsonProperty("mmse_score")]
+        public double? MmseScore { get; set; }
+        
+        [JsonProperty("grip_strength")]
+        public double? GripStrength { get; set; }
+        
+        [JsonProperty("ad_risk_value")]
+        public double? AdRiskValue { get; set; }
+        
+        [JsonProperty("brain_age")]
+        public double? BrainAge { get; set; }
+        
+        [JsonProperty("open_eyes_result_id")]
+        public int? OpenEyesResultId { get; set; }
+        
+        [JsonProperty("closed_eyes_result_id")]
+        public int? ClosedEyesResultId { get; set; }
+        
+        [JsonProperty("created_at")]
+        public DateTime CreatedAt { get; set; }
+        
+        [JsonProperty("medical_staff_name")]
+        public string MedicalStaffName { get; set; } = string.Empty;
+        
+        [JsonProperty("institution_name")]
+        public string InstitutionName { get; set; } = string.Empty;
+        
+        [JsonProperty("tester_name")]
+        public string TesterName { get; set; } = string.Empty;
+        
+        [JsonProperty("tester_external_id")]
+        public string TesterExternalId { get; set; } = string.Empty;
+    }
+    
+    // 报告测试结果模型
+    public class ReportTestResult
+    {
+        [JsonProperty("theta_value")]
+        public double? ThetaValue { get; set; }
+        
+        [JsonProperty("alpha_value")]
+        public double? AlphaValue { get; set; }
+        
+        [JsonProperty("beta_value")]
+        public double? BetaValue { get; set; }
+        
+        [JsonProperty("result")]
+        public string Result { get; set; } = string.Empty;
+        
+        [JsonProperty("created_at")]
+        public DateTime CreatedAt { get; set; }
     }
 }

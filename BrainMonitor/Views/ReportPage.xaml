@@ -75,7 +75,7 @@
             <Border Style="{StaticResource CardStyle}" Grid.Column="0" Margin="0,0,6,0" HorizontalAlignment="Center">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,5" HorizontalAlignment="Center">
-                        <TextBlock Text="AD风险评估"
+                        <TextBlock Text="AD风险指数"
                             Style="{StaticResource ModernLabel}"
                             FontSize="14" />
                     </StackPanel>
@@ -127,6 +127,8 @@
                         HorizontalAlignment="Center" />
                 </StackPanel>
             </Border>
+            
+
         </Grid>
 
         <Border Grid.Row="2" VerticalAlignment="Bottom" Height="2" Margin="0,0,0,0">
@@ -146,21 +148,23 @@
             <!-- 脑电波图部分 -->
             <Border Style="{StaticResource CardStyle}" Margin="0,0,0,0">
                 <StackPanel>
-                    <TextBlock Text="终版脑电波图"
+                    <TextBlock Text="脑电波分析图表"
                          Style="{StaticResource ModernLabel}"
                          FontSize="14"
                          HorizontalAlignment="Center"
                          Margin="0,0,0,10" />
 
-                    <!-- 脑电波图显示区域 -->
-                    <Border Height="200"
-                        Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
-                        CornerRadius="6"
-                        BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
-                        BorderThickness="1"
-                        Margin="0,0,0,0">
-                        <Canvas x:Name="BrainwaveReportCanvas" />
-                    </Border>
+                    <!-- 合并的脑电波图表 -->
+                    <StackPanel>
+                        <Border Height="200"
+                            Background="{DynamicResource SystemControlBackgroundChromeMediumLowBrush}"
+                            CornerRadius="6"
+                            BorderBrush="{DynamicResource SystemControlForegroundBaseLowBrush}"
+                            BorderThickness="1">
+                            <Canvas x:Name="CombinedChartCanvas" 
+                                Margin="10,0,10,0" />
+                        </Border>
+                    </StackPanel>
                 </StackPanel>
             </Border>
 

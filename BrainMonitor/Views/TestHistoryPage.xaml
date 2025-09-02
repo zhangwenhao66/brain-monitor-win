@@ -2,7 +2,12 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ui="http://schemas.modernwpf.com/2019"
+    xmlns:converters="clr-namespace:BrainMonitor.Converters"
     Background="#FAFAFA">
+    
+    <UserControl.Resources>
+        <converters:DateTimeConverter x:Key="DateTimeConverter" />
+    </UserControl.Resources>
 
     <Grid Margin="20">
         <Grid.RowDefinitions>
@@ -130,10 +135,10 @@
                     </DataGrid.Resources>
 
                     <DataGrid.Columns>
-                        <DataGridTextColumn Header="测试时间" Binding="{Binding TestStartTime, StringFormat=yyyy-MM-dd HH:mm}" Width="200" />
+                        <DataGridTextColumn Header="测试时间" Binding="{Binding TestStartTime, Converter={StaticResource DateTimeConverter}}" Width="200" />
                         <DataGridTextColumn Header="AD风险值" Binding="{Binding AdRiskValue, StringFormat={}{0:F2}}" Width="100" />
                         <DataGridTextColumn Header="大脑年龄" Binding="{Binding BrainAge, StringFormat={}{0:F1}}" Width="100" />
-                        <DataGridTextColumn Header="MACA评分" Binding="{Binding MacaScore, StringFormat={}{0:F1}}" Width="100" />
+                        <DataGridTextColumn Header="MoCA评分" Binding="{Binding MocaScore, StringFormat={}{0:F1}}" Width="100" />
                         <DataGridTextColumn Header="MMSE评分" Binding="{Binding MmseScore, StringFormat={}{0:F1}}" Width="100" />
                         <DataGridTextColumn Header="握力值" Binding="{Binding GripStrength, StringFormat={}{0:F1}}" Width="100" />
                     </DataGrid.Columns>

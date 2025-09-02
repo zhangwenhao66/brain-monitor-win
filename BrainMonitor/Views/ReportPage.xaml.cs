@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using Newtonsoft.Json;
 using BrainMonitor.Services;
 
 namespace BrainMonitor.Views
@@ -11,20 +12,115 @@ namespace BrainMonitor.Views
     public partial class ReportPage : UserControl, INavigationAware
     {
         private Tester currentTester;
-        private double? macaScore;
+        private double? mocaScore;
         private double? mmseScore;
         private double? gripStrength;
         private string sourcePage; // 记录来源页面
+        
+        // 脑电处理结果
+        private double brainwaveThetaValue;
+        private double brainwaveAlphaValue;
+        private double brainwaveBetaValue;
+        private double brainwaveFinalIndex;
+        private double adRiskIndex;
 
-        public ReportPage(Tester tester, double? maca, double? mmse, double? grip)
+        public ReportPage(Tester tester, double? moca, double? mmse, double? grip)
         {
             InitializeComponent();
             currentTester = tester;
-            macaScore = maca;
+            mocaScore = moca;
             mmseScore = mmse;
             gripStrength = grip;
             sourcePage = "TestPage"; // 从测试页面跳转过来
-            LoadReportData();
+            
+            // 初始化脑电处理结果为默认值
+            brainwaveThetaValue = 0.0;
+            brainwaveAlphaValue = 0.0;
+            brainwaveBetaValue = 0.0;
+            brainwaveFinalIndex = 0.0;
+            adRiskIndex = 0.0;
+            
+            LoadReportData(null);
+        }
+        
+        // 新的构造函数，包含脑电处理结果和AD风险指数
+        public ReportPage(Tester tester, double? moca, double? mmse, double? grip, 
+            double theta, double alpha, double beta, double brainwaveIndex, double adRisk)
+        {
+            InitializeComponent();
+            currentTester = tester;
+            mocaScore = moca;
+            mmseScore = mmse;
+            gripStrength = grip;
+            sourcePage = "TestPage"; // 从测试页面跳转过来
+            
+            // 设置脑电处理结果
+            brainwaveThetaValue = theta;
+            brainwaveAlphaValue = alpha;
+            brainwaveBetaValue = beta;
+            brainwaveFinalIndex = brainwaveIndex;
+            adRiskIndex = adRisk;
+            
+            LoadReportData(null);
+        }
+        
+        // 从服务器数据创建报告页面的构造函数
+        public ReportPage(Tester tester, double? moca, double? mmse, double? grip, 
+            double theta, double alpha, double beta, double brainwaveIndex, double adRisk, bool fromServer = false)
+        {
+            InitializeComponent();
+            currentTester = tester;
+            mocaScore = moca;
+            mmseScore = mmse;
+            gripStrength = grip;
+            sourcePage = fromServer ? "Server" : "TestPage"; // 标记数据来源
+            
+            // 设置脑电处理结果
+            brainwaveThetaValue = theta;
+            brainwaveAlphaValue = alpha;
+            brainwaveBetaValue = beta;
+            brainwaveFinalIndex = brainwaveIndex;
+            adRiskIndex = adRisk;
+            
+            LoadReportData(null);
+        }
+        
+        // 从服务器数据创建报告页面的构造函数（指定来源页面）- 已删除，使用构造函数5替代
+
+        // 从服务器数据创建报告页面的构造函数（包含测试记录创建时间，可替代构造函数4）
+        public ReportPage(Tester tester, double? moca, double? mmse, double? grip, 
+            double theta, double alpha, double beta, double brainwaveIndex, double adRisk, 
+            DateTime? testRecordCreatedAt, string sourcePage)
+        {
+            InitializeComponent();
+            currentTester = tester;
+            mocaScore = moca;
+            mmseScore = mmse;
+            gripStrength = grip;
+            this.sourcePage = sourcePage; // 使用指定的来源页面
+            
+            // 设置脑电处理结果
+            brainwaveThetaValue = theta;
+            brainwaveAlphaValue = alpha;
+            brainwaveBetaValue = beta;
+            brainwaveFinalIndex = brainwaveIndex;
+            adRiskIndex = adRisk;
+            
+            // 创建临时的TestHistoryRecord对象来传递创建时间
+            TestHistoryRecord? tempRecord = null;
+            if (testRecordCreatedAt.HasValue)
+            {
+                tempRecord = new TestHistoryRecord
+                {
+                    CreatedAt = testRecordCreatedAt.Value,
+                    MocaScore = moca,
+                    MmseScore = mmse,
+                    GripStrength = grip,
+                    AdRiskValue = adRisk
+                };
+            }
+            
+            LoadReportData(tempRecord);
         }
 
         // 从测试历史记录创建报告页面的构造函数
@@ -34,13 +130,16 @@ namespace BrainMonitor.Views
             currentTester = tester;
             
             // 从历史记录中获取评分数据
-            macaScore = historyRecord.MacaScore;
+            mocaScore = historyRecord.MocaScore;
             mmseScore = historyRecord.MmseScore;
             gripStrength = historyRecord.GripStrength;
             
+            // 从历史记录中获取AD风险值
+            adRiskIndex = historyRecord.AdRiskValue ?? 0.0;
+            
             sourcePage = "TestHistoryPage"; // 从测试历史页面跳转过来
             
-            LoadReportData();
+            LoadReportData(historyRecord);
         }
 
         public void OnNavigatedTo()
@@ -55,31 +154,54 @@ namespace BrainMonitor.Views
 
         private void LoadReportData()
         {
+            LoadReportData(null);
+        }
+
+        private void LoadReportData(TestHistoryRecord? historyRecord)
+        {
+            
             // 设置测试者信息
             TesterNameText.Text = currentTester.Name;
             TesterPhoneText.Text = currentTester.Phone;
             TesterGenderText.Text = currentTester.Gender;
             TesterAgeText.Text = currentTester.Age;
 
-            // 计算AD风险评估（基于MACA和MMSE评分）
-            double riskPercentage = CalculateADRisk(macaScore, mmseScore);
-            RiskPercentageText.Text = $"{riskPercentage:F0}%";
+            // 使用新的AD风险指数（如果可用）
+            double riskPercentage;
+            if (adRiskIndex > 0)
+            {
+                // 使用从服务器获取的AD风险指数
+                riskPercentage = adRiskIndex;
+            }
+            else if (brainwaveFinalIndex > 0)
+            {
+                // 如果没有AD风险值，但有脑电数据，使用脑电数据计算风险
+                riskPercentage = brainwaveFinalIndex;
+            }
+            else
+            {
+                // 使用传统的MoCA和MMSE评分计算
+                riskPercentage = CalculateADRisk(mocaScore, mmseScore);
+            }
+            
+            // 注意：这里只是设置初始值，如果后面有AD风险值，会被覆盖
+            RiskPercentageText.Text = $"{riskPercentage:F1}";
             
             // 设置风险等级
             string riskLevel;
-            if (riskPercentage < 20)
+            if (riskPercentage < 30)
             {
-                riskLevel = "低风险";
+                riskLevel = "健康";
                 RiskLevelText.Foreground = System.Windows.Media.Brushes.Green;
             }
-            else if (riskPercentage < 50)
+            else if (riskPercentage < 60)
             {
-                riskLevel = "中等风险";
+                riskLevel = "轻风险";
                 RiskLevelText.Foreground = System.Windows.Media.Brushes.Orange;
             }
             else
             {
-                riskLevel = "高风险";
+                riskLevel = "中、高风险";
                 RiskLevelText.Foreground = System.Windows.Media.Brushes.Red;
             }
             RiskLevelText.Text = riskLevel;
@@ -89,7 +211,7 @@ namespace BrainMonitor.Views
 
             // 计算大脑年龄
             int actualAge = int.TryParse(currentTester.Age, out int parsedAge) ? parsedAge : 30;
-            int brainAge = CalculateBrainAge(macaScore, mmseScore, actualAge);
+            int brainAge = CalculateBrainAge(mocaScore, mmseScore, actualAge);
             BrainAgeText.Text = $"{brainAge}岁";
             
             int ageDifference = brainAge - actualAge;
@@ -98,7 +220,39 @@ namespace BrainMonitor.Views
                 BrainAgeComparisonText.Text = $"高于实际年龄{ageDifference}岁";
                 BrainAgeComparisonText.Foreground = System.Windows.Media.Brushes.Red;
             }
-            else if (ageDifference < 0)
+            
+
+            
+            // 显示AD风险值（从服务器获取）
+            if (adRiskIndex > 0)
+            {
+                // 使用从服务器获取的AD风险值
+                RiskPercentageText.Text = $"{adRiskIndex:F1}";
+                
+                // 设置风险等级
+                string serverRiskLevel;
+                if (adRiskIndex < 30)
+                {
+                    serverRiskLevel = "健康";
+                    RiskLevelText.Foreground = System.Windows.Media.Brushes.Green;
+                }
+                else if (adRiskIndex < 60)
+                {
+                    serverRiskLevel = "轻风险";
+                    RiskLevelText.Foreground = System.Windows.Media.Brushes.Orange;
+                }
+                else
+                {
+                    serverRiskLevel = "中、高风险";
+                    RiskLevelText.Foreground = System.Windows.Media.Brushes.Red;
+                }
+                RiskLevelText.Text = serverRiskLevel;
+                
+                // 设置进度条宽度
+                RiskProgressBar.Width = (adRiskIndex / 100) * 200; // 假设最大宽度为200
+            }
+            
+            if (ageDifference < 0)
             {
                 BrainAgeComparisonText.Text = $"低于实际年龄{Math.Abs(ageDifference)}岁";
                 BrainAgeComparisonText.Foreground = System.Windows.Media.Brushes.Green;
@@ -113,28 +267,38 @@ namespace BrainMonitor.Views
             GenerateReportAnalysis();
 
             // 设置报告时间
-            ReportTimeText.Text = $"报告时间: {DateTime.Now:yyyy年M月d日 HH:mm}";
+            if (historyRecord != null)
+            {
+                // 使用测试记录的时间，将UTC时间转换为本地时间
+                DateTime localTime = historyRecord.CreatedAt.ToLocalTime();
+                ReportTimeText.Text = $"报告时间: {localTime:yyyy年M月d日 HH:mm}";
+            }
+            else
+            {
+                // 使用当前时间
+                ReportTimeText.Text = $"报告时间: {DateTime.Now:yyyy年M月d日 HH:mm}";
+            }
             
-            // 绘制静态脑电波图
-            DrawStaticBrainwaveChart();
+            // 绘制脑电波图表
+            DrawBrainwaveCharts(historyRecord);
         }
 
-        private double CalculateADRisk(double? maca, double? mmse)
+        private double CalculateADRisk(double? moca, double? mmse)
         {
             // 简化的AD风险计算算法
-            // 正常MACA评分：26-30，正常MMSE评分：24-30
-            double macaRisk = maca.HasValue ? Math.Max(0, (26 - maca.Value) / 26 * 50) : 25; // 默认中等风险
+            // 正常MoCA评分：26-30，正常MMSE评分：24-30
+            double mocaRisk = moca.HasValue ? Math.Max(0, (26 - moca.Value) / 26 * 50) : 25; // 默认中等风险
             double mmseRisk = mmse.HasValue ? Math.Max(0, (24 - mmse.Value) / 24 * 50) : 25; // 默认中等风险
             
-            return Math.Min(100, (macaRisk + mmseRisk) / 2);
+            return Math.Min(100, (mocaRisk + mmseRisk) / 2);
         }
 
-        private int CalculateBrainAge(double? maca, double? mmse, int actualAge)
+        private int CalculateBrainAge(double? moca, double? mmse, int actualAge)
         {
             // 简化的大脑年龄计算算法
-            double macaValue = maca ?? 25; // 如果为空，使用默认值25
+            double mocaValue = moca ?? 25; // 如果为空，使用默认值25
             double mmseValue = mmse ?? 25; // 如果为空，使用默认值25
-            double averageScore = (macaValue + mmseValue) / 2;
+            double averageScore = (mocaValue + mmseValue) / 2;
             double normalScore = 27; // 正常平均分
             
             double ageFactor = (normalScore - averageScore) * 2;
@@ -143,35 +307,61 @@ namespace BrainMonitor.Views
 
         private void GenerateReportAnalysis()
         {
-            string analysis = $"根据脑电波分析结果显示，受试者的认知功能";
+            string analysis = "根据脑电波分析结果显示，";
             
-            // 计算平均分，如果有值则使用，否则使用默认值
-            double macaValue = macaScore ?? 25;
-            double mmseValue = mmseScore ?? 25;
-            double averageScore = (macaValue + mmseValue) / 2;
-            
-            if (averageScore >= 26)
+            // 根据AD风险值生成不同的结果解读
+            if (adRiskIndex > 0)
             {
-                analysis += "处于正常范围，认知功能良好。";
-            }
-            else if (averageScore >= 22)
-            {
-                analysis += "处于正常范围，但存在轻微的认知功能下降趋势。建议定期进行认知功能监测，并采取相应的预防措施。";
+                // 使用AD风险值生成分析
+                if (adRiskIndex < 30)
+                {
+                    // 健康版本 (0-30)
+                    analysis += "受试者的认知功能处于健康状态，脑电波活动正常，各项指标表现良好。";
+                }
+                else if (adRiskIndex < 60)
+                {
+                    // 轻风险版本 (30-60)
+                    analysis += "受试者的认知功能存在轻度风险，脑电波活动显示轻微的异常模式，建议加强认知功能监测。";
+                }
+                else
+                {
+                    // 中、高风险版本 (60-100)
+                    analysis += "受试者的认知功能存在中高风险，脑电波活动显示明显的异常模式，建议及时进行专业医疗咨询和进一步检查。";
+                }
             }
             else
             {
-                analysis += "存在明显的认知功能下降，建议进一步检查和专业医疗咨询。";
+                // 如果没有AD风险值，使用传统的MoCA和MMSE评分分析
+                analysis += "受试者的认知功能";
+                
+                // 计算平均分，如果有值则使用，否则使用默认值
+                double mocaValue = mocaScore ?? 25;
+                double mmseValue = mmseScore ?? 25;
+                double averageScore = (mocaValue + mmseValue) / 2;
+                
+                if (averageScore >= 26)
+                {
+                    analysis += "处于正常范围，认知功能良好。";
+                }
+                else if (averageScore >= 22)
+                {
+                    analysis += "处于正常范围，但存在轻微的认知功能下降趋势。建议定期进行认知功能监测，并采取相应的预防措施。";
+                }
+                else
+                {
+                    analysis += "存在明显的认知功能下降，建议进一步检查和专业医疗咨询。";
+                }
             }
             
-            // 添加评分信息
+            // 添加评分信息（保持不变）
             analysis += " ";
-            if (macaScore.HasValue)
+            if (mocaScore.HasValue)
             {
-                analysis += $"MACA量表得分{macaScore.Value}分";
+                analysis += $"MoCA量表得分{mocaScore.Value}分";
             }
             else
             {
-                analysis += "MACA量表未测试";
+                analysis += "MoCA量表未测试";
             }
             
             analysis += "，";
@@ -184,7 +374,7 @@ namespace BrainMonitor.Views
                 analysis += "MMSE量表未测试";
             }
             
-            // 添加握力值信息
+            // 添加握力值信息（保持不变）
             if (gripStrength.HasValue)
             {
                 analysis += $"，握力值{gripStrength.Value}";
@@ -194,66 +384,136 @@ namespace BrainMonitor.Views
                 analysis += "，握力值未测试";
             }
             
-            // 评估结论
-            if ((macaScore ?? 25) >= 26 && (mmseScore ?? 24) >= 24)
+            // 评估结论（根据AD风险值调整）
+            if (adRiskIndex > 0)
             {
-                analysis += "，各项指标均处于正常范围。";
+                if (adRiskIndex < 30)
+                {
+                    analysis += "，各项指标均处于正常范围，建议保持健康的生活方式。";
+                }
+                else if (adRiskIndex < 60)
+                {
+                    analysis += "，需要关注认知功能变化，建议定期复查。";
+                }
+                else
+                {
+                    analysis += "，需要重点关注认知功能变化，建议及时就医。";
+                }
             }
             else
             {
-                analysis += "，需要关注认知功能变化。";
+                // 原有的评估结论逻辑
+                if ((mocaScore ?? 25) >= 26 && (mmseScore ?? 24) >= 24)
+                {
+                    analysis += "，各项指标均处于正常范围。";
+                }
+                else
+                {
+                    analysis += "，需要关注认知功能变化。";
+                }
             }
 
             ReportAnalysisText.Text = analysis;
         }
 
-        private void DrawStaticBrainwaveChart()
+        private async void DrawBrainwaveCharts(TestHistoryRecord? historyRecord)
         {
-            // 清空画布并设置背景
-            BrainwaveReportCanvas.Children.Clear();
-            BrainwaveReportCanvas.Background = new SolidColorBrush(Color.FromRgb(245, 245, 245)); // 浅灰色背景
-            
-            // 等待Canvas渲染完成后绘制
-            BrainwaveReportCanvas.Loaded += (s, e) => {
-                if (BrainwaveReportCanvas.ActualWidth > 0 && BrainwaveReportCanvas.ActualHeight > 0)
+            // 清空画布
+            CombinedChartCanvas.Children.Clear();
+
+            // 设置画布背景
+            CombinedChartCanvas.Background = new SolidColorBrush(Color.FromRgb(245, 245, 245));
+
+            // 获取闭眼测试结果数据
+            double thetaValue = 0.0;
+            double alphaValue = 0.0;
+            double betaValue = 0.0;
+
+            if (historyRecord != null && historyRecord.ClosedEyesResultId.HasValue)
+            {
+                try
                 {
-                    DrawGridAndBaseline();
-                    DrawStaticWaveforms();
+                    // 从服务器获取闭眼测试结果数据
+                    var testResult = await GetTestResultData(historyRecord.ClosedEyesResultId.Value);
+                    if (testResult != null)
+                    {
+                        thetaValue = testResult.ThetaValue ?? 0.0;
+                        alphaValue = testResult.AlphaValue ?? 0.0;
+                        betaValue = testResult.BetaValue ?? 0.0;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"获取测试结果数据失败: {ex.Message}");
+                }
+            }
+            else
+            {
+                // 使用当前测试的数据
+                thetaValue = brainwaveThetaValue;
+                alphaValue = brainwaveAlphaValue;
+                betaValue = brainwaveBetaValue;
+            }
+
+            // 绘制合并的图表
+            DrawCombinedChart(CombinedChartCanvas, thetaValue, alphaValue, betaValue);
+        }
+
+        private async Task<TestResultData?> GetTestResultData(int resultId)
+        {
+            try
+            {
+                // 调用后端API获取测试结果数据
+                var response = await HttpService.GetAsync<ApiResponse<TestResultData>>($"/test-records/result/{resultId}", GlobalMedicalStaffManager.CurrentToken);
+                
+                if (response.Success && response.Data != null)
+                {
+                    return response.Data;
+                }
+                
+                return null;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"获取测试结果数据失败: {ex.Message}");
+                return null;
+            }
+        }
+
+        private void DrawCombinedChart(Canvas canvas, double thetaValue, double alphaValue, double betaValue)
+        {
+            // 等待Canvas渲染完成后绘制
+            canvas.Loaded += (s, e) => {
+                if (canvas.ActualWidth > 0 && canvas.ActualHeight > 0)
+                {
+                    DrawCombinedChartContent(canvas, thetaValue, alphaValue, betaValue);
                 }
             };
             
             // 如果Canvas已经加载，直接绘制
-            if (BrainwaveReportCanvas.ActualWidth > 0 && BrainwaveReportCanvas.ActualHeight > 0)
+            if (canvas.ActualWidth > 0 && canvas.ActualHeight > 0)
             {
-                DrawGridAndBaseline();
-                DrawStaticWaveforms();
+                DrawCombinedChartContent(canvas, thetaValue, alphaValue, betaValue);
             }
         }
-        
-        private void DrawGridAndBaseline()
+
+        private void DrawCombinedChartContent(Canvas canvas, double thetaValue, double alphaValue, double betaValue)
         {
-            double width = BrainwaveReportCanvas.ActualWidth;
-            double height = BrainwaveReportCanvas.ActualHeight;
-            
+            double width = canvas.ActualWidth;
+            double height = canvas.ActualHeight;
+            double chartHeight = height * 0.8; // 图表区域高度
+            double chartTop = height * 0.1; // 图表顶部位置
+
+            // 清空画布
+            canvas.Children.Clear();
+
             // 绘制网格线
             var gridBrush = new SolidColorBrush(Color.FromRgb(220, 220, 220));
             
-            // 垂直网格线
-            for (double x = 0; x <= width; x += 40)
+            // 水平网格线（0-100刻度，每20一个值）
+            for (int i = 0; i <= 5; i++)
             {
-                Line gridLine = new Line
-                {
-                    X1 = x, Y1 = 0,
-                    X2 = x, Y2 = height,
-                    Stroke = gridBrush,
-                    StrokeThickness = 0.5
-                };
-                BrainwaveReportCanvas.Children.Add(gridLine);
-            }
-            
-            // 水平网格线
-            for (double y = 0; y <= height; y += 30)
-            {
+                double y = chartTop + (i * chartHeight / 5);
                 Line gridLine = new Line
                 {
                     X1 = 0, Y1 = y,
@@ -261,95 +521,139 @@ namespace BrainMonitor.Views
                     Stroke = gridBrush,
                     StrokeThickness = 0.5
                 };
-                BrainwaveReportCanvas.Children.Add(gridLine);
-            }
-            
-            // 绘制绿色虚线标准值（中心线）
-            Line baseline = new Line
-            {
-                X1 = 0, Y1 = height / 2,
-                X2 = width, Y2 = height / 2,
-                Stroke = new SolidColorBrush(Color.FromRgb(0, 150, 0)), // 绿色
-                StrokeThickness = 2,
-                StrokeDashArray = new DoubleCollection { 5, 3 } // 虚线样式
-            };
-            BrainwaveReportCanvas.Children.Add(baseline);
-        }
-        
-        private void DrawStaticWaveforms()
-        {
-            double width = BrainwaveReportCanvas.ActualWidth;
-            double height = BrainwaveReportCanvas.ActualHeight;
-            double centerY = height / 2;
-            
-            // 定义三种颜色的波形
-            var waveformColors = new List<Color>
-            {
-                Color.FromRgb(0, 150, 0),   // 绿色
-                Color.FromRgb(0, 120, 215), // 蓝色
-                Color.FromRgb(128, 0, 128)  // 紫色
-            };
-            
-            // 为每种颜色绘制一条波形
-            for (int waveIndex = 0; waveIndex < waveformColors.Count; waveIndex++)
-            {
-                var color = waveformColors[waveIndex];
-                var brush = new SolidColorBrush(color);
-                
-                // 生成波形数据点
-                var points = GenerateWaveformData(width, centerY, waveIndex);
-                
-                // 绘制波形线条
-                for (int i = 1; i < points.Count; i++)
+                canvas.Children.Add(gridLine);
+
+                // 添加刻度标签
+                TextBlock scaleLabel = new TextBlock
                 {
-                    Line line = new Line
-                    {
-                        X1 = points[i - 1].X,
-                        Y1 = points[i - 1].Y,
-                        X2 = points[i].X,
-                        Y2 = points[i].Y,
-                        Stroke = brush,
-                        StrokeThickness = 2
-                    };
-                    BrainwaveReportCanvas.Children.Add(line);
-                }
+                    Text = (100 - i * 20).ToString(),
+                    FontSize = 8,
+                    Foreground = new SolidColorBrush(Color.FromRgb(100, 100, 100))
+                };
+                Canvas.SetLeft(scaleLabel, 5);
+                Canvas.SetTop(scaleLabel, y - 8);
+                canvas.Children.Add(scaleLabel);
+            }
+
+            // 计算柱状图参数
+            double barWidth = width * 0.08; // 柱子宽度（减小）
+            double barSpacing = width * 0.15; // 柱子间距（增加）
+            double totalWidth = 3 * barWidth + 2 * barSpacing;
+            double startX = (width - totalWidth) / 2; // 起始X位置
+
+            // 绘制三个柱子
+            var values = new[] { thetaValue, alphaValue, betaValue };
+            var labels = new[] { "Theta", "Alpha", "Beta" };
+
+            for (int i = 0; i < 3; i++)
+            {
+                double value = values[i];
+                string label = labels[i];
+                double x = startX + i * (barWidth + barSpacing);
+                
+                // 限制值在0-100范围内
+                value = Math.Max(0, Math.Min(100, value));
+                
+                // 计算柱子高度
+                double barHeight = (value / 100.0) * chartHeight;
+                double barY = chartTop + chartHeight - barHeight;
+
+                // 生成热力图颜色
+                Color barColor = GetHeatmapColor(value);
+
+                // 绘制柱子（圆角矩形）
+                Border bar = new Border
+                {
+                    Width = barWidth,
+                    Height = barHeight,
+                    Background = new SolidColorBrush(barColor),
+                    CornerRadius = new CornerRadius(barWidth * 0.1), // 稍微圆角
+                    Opacity = 0.6 // 降低饱和度
+                };
+                Canvas.SetLeft(bar, x);
+                Canvas.SetTop(bar, barY);
+                canvas.Children.Add(bar);
+
+                // 在柱子顶部添加数值标签
+                Border valueContainer = new Border
+                {
+                    Width = barWidth,
+                    HorizontalAlignment = HorizontalAlignment.Center
+                };
+                TextBlock valueLabel = new TextBlock
+                {
+                    Text = $"{value:F1}",
+                    FontSize = 10,
+                    Foreground = new SolidColorBrush(Color.FromRgb(50, 50, 50)),
+                    FontWeight = FontWeights.Bold,
+                    HorizontalAlignment = HorizontalAlignment.Center
+                };
+                valueContainer.Child = valueLabel;
+                Canvas.SetLeft(valueContainer, x);
+                Canvas.SetTop(valueContainer, barY - 20);
+                canvas.Children.Add(valueContainer);
+
+                // 在柱子底部添加标签
+                Border labelContainer = new Border
+                {
+                    Width = barWidth,
+                    HorizontalAlignment = HorizontalAlignment.Center
+                };
+                TextBlock labelText = new TextBlock
+                {
+                    Text = label,
+                    FontSize = 10,
+                    Foreground = new SolidColorBrush(Color.FromRgb(100, 100, 100)),
+                    FontWeight = FontWeights.Bold,
+                    HorizontalAlignment = HorizontalAlignment.Center
+                };
+                labelContainer.Child = labelText;
+                Canvas.SetLeft(labelContainer, x);
+                Canvas.SetTop(labelContainer, chartTop + chartHeight + 5);
+                canvas.Children.Add(labelContainer);
             }
         }
-        
-        private List<Point> GenerateWaveformData(double width, double centerY, int waveIndex)
+
+        private Color GetHeatmapColor(double value)
         {
-            var points = new List<Point>();
-            double stepSize = 3; // 每3像素一个点
-            
-            for (double x = 0; x <= width; x += stepSize)
+            // 热力图颜色映射：0=绿色，50=黄色，100=红色（降低饱和度）
+            if (value <= 50)
             {
-                // 为不同的波形创建不同的模式
-                double y = centerY;
-                
-                switch (waveIndex)
-                {
-                    case 0: // 绿色波形 - 较平缓的正弦波
-                        y += Math.Sin(x * 0.02) * 30 + Math.Sin(x * 0.05) * 15;
-                        break;
-                    case 1: // 蓝色波形 - 中等频率的波形
-                        y += Math.Sin(x * 0.03) * 25 + Math.Cos(x * 0.08) * 20;
-                        break;
-                    case 2: // 紫色波形 - 较高频率的波形
-                        y += Math.Sin(x * 0.04) * 35 + Math.Sin(x * 0.1) * 10;
-                        break;
-                }
-                
-                // 添加一些随机变化使波形更自然
-                Random rand = new Random(waveIndex * 1000 + (int)x);
-                y += (rand.NextDouble() - 0.5) * 8;
-                
-                // 确保Y坐标在合理范围内
-                y = Math.Max(10, Math.Min(BrainwaveReportCanvas.ActualHeight - 10, y));
-                
-                points.Add(new Point(x, y));
+                // 绿色到黄色的过渡（降低饱和度）
+                double ratio = value / 50.0;
+                byte r = (byte)Math.Min(255, 180 * ratio + 100); // 降低红色分量
+                byte g = (byte)Math.Min(255, 180 + 100); // 降低绿色分量
+                byte b = (byte)(100); // 添加灰色分量降低饱和度
+                return Color.FromRgb(r, g, b);
             }
+            else
+            {
+                // 黄色到红色的过渡（降低饱和度）
+                double ratio = (value - 50) / 50.0;
+                byte r = (byte)Math.Min(255, 180 + 100); // 降低红色分量
+                byte g = (byte)Math.Min(255, 180 * (1 - ratio) + 100); // 降低绿色分量
+                byte b = (byte)(100); // 添加灰色分量降低饱和度
+                return Color.FromRgb(r, g, b);
+            }
+        }
+
+        // 测试结果数据模型
+        private class TestResultData
+        {
+            [JsonProperty("theta_value")]
+            public double? ThetaValue { get; set; }
             
-            return points;
+            [JsonProperty("alpha_value")]
+            public double? AlphaValue { get; set; }
+            
+            [JsonProperty("beta_value")]
+            public double? BetaValue { get; set; }
+            
+            [JsonProperty("result")]
+            public string Result { get; set; } = string.Empty;
+            
+            [JsonProperty("created_at")]
+            public DateTime CreatedAt { get; set; }
         }
 
         private void ReturnButton_Click(object sender, RoutedEventArgs e)

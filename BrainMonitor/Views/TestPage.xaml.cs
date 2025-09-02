@@ -28,6 +28,13 @@ namespace BrainMonitor.Views
         private bool isTestStarted = false; // 是否已开始测试
         private bool isTestCompleted = false; // 是否已完成测试流程
         
+        // 脑电处理结果存储
+        private double brainwaveThetaValue = 0.0;
+        private double brainwaveAlphaValue = 0.0;
+        private double brainwaveBetaValue = 0.0;
+        private double brainwaveFinalIndex = 0.0;
+        private List<double> closedEyesData = new List<double>();
+        
         // 数据缓冲相关变量
         private Queue<int[]> dataBuffer = new Queue<int[]>();
         private DispatcherTimer displayTimer;
@@ -2509,6 +2516,13 @@ namespace BrainMonitor.Views
             openEyesResultId = e.OpenEyesResultId;
             closedEyesResultId = e.ClosedEyesResultId;
             
+            // 存储脑电处理结果
+            brainwaveThetaValue = e.ThetaValue;
+            brainwaveAlphaValue = e.AlphaValue;
+            brainwaveBetaValue = e.BetaValue;
+            brainwaveFinalIndex = e.BrainwaveFinalIndex;
+            closedEyesData = e.ClosedEyesData;
+            
             // 更新生成报告按钮状态
             UpdateGenerateReportButtonState();
         }
@@ -2529,19 +2543,19 @@ namespace BrainMonitor.Views
         private async void GetReportButton_Click(object sender, RoutedEventArgs e)
         {
             // 获取输入值，允许为空
-            double? macaScore = null;
+            double? mocaScore = null;
             double? mmseScore = null;
             double? gripStrength = null;
 
-            // 验证MACA评分（如果有输入）
-            if (!string.IsNullOrWhiteSpace(MacaScoreTextBox.Text))
+            // 验证MoCA评分（如果有输入）
+            if (!string.IsNullOrWhiteSpace(MocaScoreTextBox.Text))
             {
-                if (!double.TryParse(MacaScoreTextBox.Text, out double maca) || maca < 0 || maca > 30)
+                if (!double.TryParse(MocaScoreTextBox.Text, out double moca) || moca < 0 || moca > 30)
                 {
-                    Dispatcher.Invoke(() => ModernMessageBoxWindow.Show("MACA评分必须是0-30之间的数字", "提示", ModernMessageBoxWindow.MessageBoxType.Warning));
+                    Dispatcher.Invoke(() => ModernMessageBoxWindow.Show("MoCA评分必须是0-30之间的数字", "提示", ModernMessageBoxWindow.MessageBoxType.Warning));
                     return;
                 }
-                macaScore = maca;
+                mocaScore = moca;
             }
 
             // 验证MMSE评分（如果有输入）
@@ -2567,13 +2581,114 @@ namespace BrainMonitor.Views
             }
 
             // 保存测试结果到后端
-            await SaveTestResultsToServer(macaScore, mmseScore, gripStrength);
+            var (success, testRecordId) = await SaveTestResultsToServer(mocaScore, mmseScore, gripStrength);
+
+            if (success && testRecordId.HasValue)
+            {
+                // 获取测试记录详细信息用于生成报告
+                try
+                {
+                    string token = GetCurrentAuthToken();
+                    if (!string.IsNullOrEmpty(token))
+                    {
+                        using (var httpClient = new System.Net.Http.HttpClient())
+                        {
+                            httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+                            
+                            var reportResponse = await httpClient.GetAsync($"http://localhost:3000/api/test-records/{testRecordId}/report");
+                            if (reportResponse.IsSuccessStatusCode)
+                            {
+                                var reportContent = await reportResponse.Content.ReadAsStringAsync();
+                                System.Diagnostics.Debug.WriteLine($"=== 服务器返回的完整JSON ===");
+                                System.Diagnostics.Debug.WriteLine(reportContent);
+                                var reportData = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(reportContent);
+                                
+                                if (reportData.ContainsKey("data") && reportData["data"].ValueKind == JsonValueKind.Object)
+                                {
+                                    var reportInfo = reportData["data"];
+                                    
+                                    // 从服务器获取的数据
+                                    double? serverMocaScore = null;
+                                    double? serverMmseScore = null;
+                                    double? serverGripStrength = null;
+                                    double? serverAdRiskValue = null;
+                                    double? serverThetaValue = null;
+                                    double? serverAlphaValue = null;
+                                    double? serverBetaValue = null;
+                                    DateTime? testRecordCreatedAt = null;
+                                    
+                                    // 解析测试记录数据
+                                    if (reportInfo.TryGetProperty("testRecord", out var testRecordElement))
+                                    {
+                                        var testRecord = testRecordElement;
+                                        serverMocaScore = ParseJsonValue<double?>(testRecord, "moca_score");
+                                        serverMmseScore = ParseJsonValue<double?>(testRecord, "mmse_score");
+                                        serverGripStrength = ParseJsonValue<double?>(testRecord, "grip_strength");
+                                        serverAdRiskValue = ParseJsonValue<double?>(testRecord, "ad_risk_value");
+                                        
+                                        // 解析创建时间
+                                        System.Diagnostics.Debug.WriteLine($"=== 开始解析创建时间 ===");
+                                        if (testRecord.TryGetProperty("created_at", out var createdAtElement))
+                                        {
+                                            System.Diagnostics.Debug.WriteLine($"找到created_at字段: {createdAtElement}");
+                                            string? createdAtString = createdAtElement.GetString();
+                                            System.Diagnostics.Debug.WriteLine($"created_at字符串值: {createdAtString}");
+                                            
+                                            if (DateTime.TryParse(createdAtString, out DateTime createdAt))
+                                            {
+                                                testRecordCreatedAt = createdAt;
+                                                System.Diagnostics.Debug.WriteLine($"成功解析创建时间: {createdAt}");
+                                            }
+                                            else
+                                            {
+                                                System.Diagnostics.Debug.WriteLine($"解析创建时间失败: {createdAtString}");
+                                            }
+                                        }
+                                        else
+                                        {
+                                            System.Diagnostics.Debug.WriteLine($"未找到created_at字段");
+                                        }
+                                        System.Diagnostics.Debug.WriteLine($"最终testRecordCreatedAt值: {testRecordCreatedAt}");
+                                    }
+                                    
+                                    // 解析闭眼测试结果数据
+                                    if (reportInfo.TryGetProperty("closedEyesResult", out var closedEyesElement) && closedEyesElement.ValueKind != JsonValueKind.Null)
+                                    {
+                                        var closedEyesResult = closedEyesElement;
+                                        serverThetaValue = ParseJsonValue<double?>(closedEyesResult, "theta_value");
+                                        serverAlphaValue = ParseJsonValue<double?>(closedEyesResult, "alpha_value");
+                                        serverBetaValue = ParseJsonValue<double?>(closedEyesResult, "beta_value");
+                                    }
+                                    
+                                    // 停止数据采集和脑电波模拟
+                                    StopDataCollection();
+                                    
+                                    // 正确计算脑电最终指标：Theta值/3 + Alpha值/3 + Beta值/3
+                                    double brainwaveFinalIndex = ((serverThetaValue ?? 0) + (serverAlphaValue ?? 0) + (serverBetaValue ?? 0)) / 3.0;
+                                    
+                                    System.Diagnostics.Debug.WriteLine($"=== 准备创建ReportPage ===");
+                                    System.Diagnostics.Debug.WriteLine($"传递的testRecordCreatedAt: {testRecordCreatedAt}");
+                                    // 明确调用包含testRecordCreatedAt参数的构造函数
+                                    var reportPage = new ReportPage(CurrentTester, serverMocaScore, serverMmseScore, serverGripStrength, 
+                                        serverThetaValue ?? 0, serverAlphaValue ?? 0, serverBetaValue ?? 0, 
+                                        brainwaveFinalIndex, 
+                                        serverAdRiskValue ?? 0, testRecordCreatedAt, "Server");
+                                    NavigationManager.NavigateTo(reportPage);
+                                    
+                                    return;
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // 异常处理
+                }
+            }
 
             // 停止数据采集和脑电波模拟
             StopDataCollection();
-
-            // 导航到报告页面
-            NavigationManager.NavigateTo(new ReportPage(CurrentTester, macaScore, mmseScore, gripStrength));
         }
 
         private void ReturnButton_Click(object sender, RoutedEventArgs e)
@@ -2583,6 +2698,66 @@ namespace BrainMonitor.Views
             
             // 返回到医护人员操作页面
             NavigationManager.NavigateTo(new MedicalStaffPage());
+        }
+        
+        /// <summary>
+        /// 计算AD风险指数
+        /// AD风险指数 = (脑电最终指标/2 + 量表分数/2)
+        /// 脑电最终指标 = (Theta值/3 + Alpha值/3 + Beta值/3)
+        /// 量表分数 = (MMSE分数/30 * 100% + MoCA分数/30 * 100%) / 2
+        /// </summary>
+        /// <param name="mocaScore">MoCA评分</param>
+        /// <param name="mmseScore">MMSE评分</param>
+        /// <param name="gripStrength">握力值（不再使用）</param>
+        /// <returns>AD风险指数</returns>
+        private double CalculateADRiskIndex(double? mocaScore, double? mmseScore, double? gripStrength)
+        {
+            try
+            {
+                // 计算脑电最终指标
+                double brainwaveFinalIndex = (brainwaveThetaValue / 3.0) + (brainwaveAlphaValue / 3.0) + (brainwaveBetaValue / 3.0);
+                
+                // 计算量表分数
+                double scaleScore = 0.0;
+                int scaleCount = 0;
+                
+                if (mmseScore.HasValue)
+                {
+                    // MMSE分数/30 * 100%
+                    double mmsePercentage = (mmseScore.Value / 30.0) * 100.0;
+                    scaleScore += mmsePercentage;
+                    scaleCount++;
+                }
+                
+                if (mocaScore.HasValue)
+                {
+                    // MoCA分数/30 * 100%
+                    double mocaPercentage = (mocaScore.Value / 30.0) * 100.0;
+                    scaleScore += mocaPercentage;
+                    scaleCount++;
+                }
+                
+                // 计算平均量表分数
+                double averageScaleScore = scaleCount > 0 ? scaleScore / scaleCount : 0.0;
+                
+                // 计算AD风险指数：AD风险指数 = (脑电最终指标/2 + 量表分数/2)
+                double adRiskIndex = (brainwaveFinalIndex / 2.0) + (averageScaleScore / 2.0);
+                
+                System.Diagnostics.Debug.WriteLine($"AD风险指数计算:");
+                System.Diagnostics.Debug.WriteLine($"  Theta值: {brainwaveThetaValue:F2}%");
+                System.Diagnostics.Debug.WriteLine($"  Alpha值: {brainwaveAlphaValue:F2}%");
+                System.Diagnostics.Debug.WriteLine($"  Beta值: {brainwaveBetaValue:F2}%");
+                System.Diagnostics.Debug.WriteLine($"  脑电最终指标: {brainwaveFinalIndex:F2}%");
+                System.Diagnostics.Debug.WriteLine($"  平均量表分数: {averageScaleScore:F2}%");
+                System.Diagnostics.Debug.WriteLine($"  AD风险指数: {adRiskIndex:F2}");
+                
+                return adRiskIndex;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"计算AD风险指数时发生异常: {ex.Message}");
+                return 0.0;
+            }
         }
         
         private void StopDataCollection()
@@ -2625,8 +2800,9 @@ namespace BrainMonitor.Views
         private int closedEyesResultId = 0;
         
         // 保存测试结果到后端服务器
-        private async Task SaveTestResultsToServer(double? macaScore, double? mmseScore, double? gripStrength)
+        private async Task<(bool success, int? testRecordId)> SaveTestResultsToServer(double? mocaScore, double? mmseScore, double? gripStrength)
         {
+
             try
             {
                 // 获取当前医护人员信息
@@ -2637,7 +2813,7 @@ namespace BrainMonitor.Views
                 string token = GetCurrentAuthToken();
                 if (string.IsNullOrEmpty(token))
                 {
-                    return;
+                    return (false, null);
                 }
                 
                 // 创建HTTP客户端
@@ -2654,7 +2830,7 @@ namespace BrainMonitor.Views
                         medicalStaffName = staffName,
                         institutionId = institutionId,
                         testDate = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                        macaScore = macaScore,
+                        mocaScore = mocaScore,
                         mmseScore = mmseScore,
                         gripStrength = gripStrength,
                         testStatus = "已完成",
@@ -2669,17 +2845,42 @@ namespace BrainMonitor.Views
                     // 发送请求
                     var response = await httpClient.PostAsync("http://localhost:3000/api/test-records", content);
                     
-                    if (!response.IsSuccessStatusCode)
+                    if (response.IsSuccessStatusCode)
+                    {
+                        // 获取测试记录ID
+                        var responseContent = await response.Content.ReadAsStringAsync();
+                        var responseData = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(responseContent);
+                        
+                        if (responseData.ContainsKey("data") && responseData["data"].ValueKind == JsonValueKind.Object)
+                        {
+                            var data = responseData["data"];
+                            if (data.TryGetProperty("testRecordId", out var testRecordIdElement))
+                            {
+                                var testRecordId = testRecordIdElement.GetInt32();
+                
+                                return (true, testRecordId);
+                            }
+                        }
+                    }
+                    else
                     {
                         // 处理错误响应
                         var errorContent = await response.Content.ReadAsStringAsync();
+                        System.Diagnostics.Debug.WriteLine($"创建测试记录失败: {errorContent}");
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                System.Diagnostics.Debug.WriteLine($"保存测试结果时发生异常: {ex.Message}");
                 // 忽略保存异常
             }
+            finally
+            {
+
+            }
+            
+            return (false, null);
         }
         
         // 获取当前医护人员姓名
@@ -2744,7 +2945,7 @@ namespace BrainMonitor.Views
                                 if (tokenData.ContainsKey("userId") && tokenData["userId"].ValueKind != JsonValueKind.Null)
                                 {
                                     var userId = tokenData["userId"].GetInt32();
-                                    System.Diagnostics.Debug.WriteLine($"从JWT token解析出医护人员ID: {userId}");
+                    
                                     return userId;
                                 }
                             }
@@ -2791,6 +2992,52 @@ namespace BrainMonitor.Views
             {
                 System.Diagnostics.Debug.WriteLine($"获取认证令牌失败: {ex.Message}");
                 return "";
+            }
+        }
+        
+        // 安全的JSON值解析方法
+        private T ParseJsonValue<T>(JsonElement element, string propertyName)
+        {
+            try
+            {
+                if (element.TryGetProperty(propertyName, out var propertyElement))
+                {
+                    if (propertyElement.ValueKind == JsonValueKind.Null)
+                        return default(T);
+                    
+                    if (typeof(T) == typeof(double?))
+                    {
+                        if (propertyElement.ValueKind == JsonValueKind.Number)
+                            return (T)(object)propertyElement.GetDouble();
+                        else if (propertyElement.ValueKind == JsonValueKind.String)
+                        {
+                            if (double.TryParse(propertyElement.GetString(), out double result))
+                                return (T)(object)result;
+                        }
+                    }
+                    else if (typeof(T) == typeof(int?))
+                    {
+                        if (propertyElement.ValueKind == JsonValueKind.Number)
+                            return (T)(object)propertyElement.GetInt32();
+                        else if (propertyElement.ValueKind == JsonValueKind.String)
+                        {
+                            if (int.TryParse(propertyElement.GetString(), out int result))
+                                return (T)(object)result;
+                        }
+                    }
+                    else if (typeof(T) == typeof(string))
+                    {
+                        if (propertyElement.ValueKind == JsonValueKind.String)
+                            return (T)(object)propertyElement.GetString();
+                    }
+                }
+                
+                return default(T);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"解析JSON属性 {propertyName} 失败: {ex.Message}");
+                return default(T);
             }
         }
     }

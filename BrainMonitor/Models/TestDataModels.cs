@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic; // Added for List
 
 namespace BrainMonitor.Models
 {
@@ -24,5 +25,14 @@ namespace BrainMonitor.Models
     {
         public int OpenEyesResultId { get; set; }
         public int ClosedEyesResultId { get; set; }
+        
+        // 脑电处理结果
+        public double ThetaValue { get; set; }
+        public double AlphaValue { get; set; }
+        public double BetaValue { get; set; }
+        public double BrainwaveFinalIndex { get; set; }
+        
+        // 闭眼测试数据
+        public List<double> ClosedEyesData { get; set; } = new List<double>();
     }
 }

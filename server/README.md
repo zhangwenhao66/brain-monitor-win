@@ -201,7 +201,7 @@ Content-Type: application/json
 {
   "testStatus": "已完成",
   "testEndTime": "2024-01-01T12:00:00Z",
-  "macaScore": 25,
+  "mocaScore": 25,
   "mmseScore": 28,
   "gripStrength": 35.5
 }
