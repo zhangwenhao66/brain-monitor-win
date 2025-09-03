@@ -8,7 +8,15 @@
     "dev": "nodemon server.js",
     "test": "node test-institution-login.js",
     "test:login": "node test-institution-login.js",
-    "init-db": "node scripts/init-db.js"
+    "init-db": "node scripts/init-db.js",
+    "pm2:start": "pm2 start ecosystem.config.js --env production",
+    "pm2:stop": "pm2 stop brain-monitor-server",
+    "pm2:restart": "pm2 restart brain-monitor-server",
+    "pm2:reload": "pm2 reload brain-monitor-server",
+    "pm2:delete": "pm2 delete brain-monitor-server",
+    "pm2:status": "pm2 status",
+    "pm2:logs": "pm2 logs brain-monitor-server",
+    "pm2:monit": "pm2 monit"
   },
   "keywords": [
     "brain",
@@ -33,5 +41,9 @@
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
   }
 }

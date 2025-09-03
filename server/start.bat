@@ -1,7 +1,7 @@
 @echo off
 chcp 65001 >nul
 echo ========================================
-echo    Brain Monitor Server 启动脚本
+echo    脑镜BrainMirror Server 启动脚本
 echo ========================================
 echo.
 
@@ -51,7 +51,7 @@ if not exist ".env" (
 )
 
 echo.
-echo 🚀 正在启动Brain Monitor Server...
+echo 🚀 正在启动脑镜BrainMirror Server...
 echo 📍 服务器地址: http://localhost:3000
 echo 📊 健康检查: http://localhost:3000/health
 echo.

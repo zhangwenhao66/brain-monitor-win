@@ -36,7 +36,7 @@ async function initDatabase() {
         // 创建数据库
         console.log('📝 创建数据库...');
         await connection.execute(`
-            CREATE DATABASE IF NOT EXISTS brain_monitor 
+            CREATE DATABASE IF NOT EXISTS brain_mirror 
             CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci
         `);
         
@@ -48,11 +48,11 @@ async function initDatabase() {
         // 重新连接到指定数据库
         connection = await mysql.createConnection({
             ...dbConfig,
-            database: 'brain_monitor',
+            database: 'brain_mirror',
             multipleStatements: true
         });
         
-        console.log('✅ 成功连接到 brain_monitor 数据库');
+        console.log('✅ 成功连接到 brain_mirror 数据库');
         
         // 读取并执行完整的 schema.sql 文件
         console.log('📋 创建表结构...');

@@ -16,8 +16,7 @@ namespace BrainMirror
             // 设置主题色为系统默认的蓝色
             ThemeManager.Current.AccentColor = System.Windows.Media.Color.FromRgb(0, 120, 215);
             
-            // 初始化示例数据
-            GlobalTesterList.InitializeSampleData();
+            // 不再初始化示例数据，改为从后端获取真实数据
             
             // 创建并显示主窗口
             var mainWindow = new MainWindow();

@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 >nul
-echo 🚀 Brain Monitor 机构登录功能快速启动脚本
+echo 🚀 脑镜BrainMirror 机构登录功能快速启动脚本
 echo.
 
 echo 📋 检查Node.js环境...

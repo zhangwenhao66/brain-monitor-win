@@ -304,8 +304,8 @@ namespace BrainMirror.Views
                 LogoutButton.Visibility = Visibility.Visible;
                 StaffLoginRegisterButton.Visibility = Visibility.Collapsed;
                 
-                // 重新加载当前医护人员的测试者列表
-                TesterDataGrid.ItemsSource = GlobalTesterList.GetCurrentStaffTesters();
+                // 不再显示模拟数据，等待异步加载真实数据
+                // TesterDataGrid.ItemsSource = GlobalTesterList.GetCurrentStaffTesters();
             }
             else
             {

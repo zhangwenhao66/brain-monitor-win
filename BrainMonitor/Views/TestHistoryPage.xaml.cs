@@ -128,7 +128,7 @@ namespace BrainMirror.Views
                         {
                             httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
                             
-                            var reportResponse = await httpClient.GetAsync($"http://localhost:3000/api/test-records/{selectedRecord.Id}/report");
+                            var reportResponse = await httpClient.GetAsync($"https://bm.miyinbot.com/api/test-records/{selectedRecord.Id}/report");
                             
                             if (reportResponse.IsSuccessStatusCode)
                             {

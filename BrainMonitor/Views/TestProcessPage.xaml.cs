@@ -70,10 +70,10 @@ namespace BrainMirror.Views
         {
             3,  // 第一个指令显示3秒
             3,  // 第二个指令显示3秒
-            10,  // 第一次倒计时10秒（临时调试用）
+            180,  // 第一次倒计时3分钟（睁眼测试）
             3,  // 第四个指令显示3秒
             3,  // 第五个指令显示3秒
-            10,  // 第二次倒计时10秒（临时调试用）
+            180,  // 第二次倒计时3分钟（闭眼测试）
             3,  // 第七个指令显示3秒
             -1   // 最后一个指令一直显示
         };
@@ -167,7 +167,7 @@ namespace BrainMirror.Views
                 // 如果是倒计时步骤，显示倒计时
                 if (currentStep == 2 || currentStep == 6)
                 {
-                    countdownSeconds = 10; // 10秒（临时调试用）
+                    countdownSeconds = 180; // 3分钟（180秒）
                     isCountingDown = true;
                     
                     // 设置测试类型
@@ -416,7 +416,7 @@ namespace BrainMirror.Views
                         formData.Add(new System.Net.Http.StringContent(testerName), "testerName");
                         
                         // 发送请求
-                        var response = await httpClient.PostAsync("http://localhost:3000/api/brainwave-data/upload", formData);
+                        var response = await httpClient.PostAsync("https://bm.miyinbot.com/api/brainwave-data/upload", formData);
                         
                         if (response.IsSuccessStatusCode)
                         {
@@ -510,7 +510,7 @@ namespace BrainMirror.Views
                     var jsonContent = System.Text.Json.JsonSerializer.Serialize(testRecordData);
                     var content = new System.Net.Http.StringContent(jsonContent, System.Text.Encoding.UTF8, "application/json");
                     
-                    var response = await httpClient.PostAsync("http://localhost:3000/api/test-records", content);
+                    var response = await httpClient.PostAsync("https://bm.miyinbot.com/api/test-records", content);
                     
                     if (response.IsSuccessStatusCode)
                     {
@@ -780,7 +780,7 @@ namespace BrainMirror.Views
                     var content = new System.Net.Http.StringContent(jsonContent, System.Text.Encoding.UTF8, "application/json");
                     
                     // 发送更新请求
-                    var response = await httpClient.PutAsync("http://localhost:3000/api/brainwave-data/update-result", content);
+                    var response = await httpClient.PutAsync("https://bm.miyinbot.com/api/brainwave-data/update-result", content);
                     
                     if (response.IsSuccessStatusCode)
                     {

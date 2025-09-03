@@ -12,7 +12,7 @@ namespace BrainMirror.Services
     public class HttpService
     {
         private static readonly HttpClient httpClient = new HttpClient();
-        private const string BaseUrl = "http://localhost:3000/api";
+        private const string BaseUrl = "https://bm.miyinbot.com/api";
 
         static HttpService()
         {

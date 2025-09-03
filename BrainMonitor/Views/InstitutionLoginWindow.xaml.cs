@@ -136,7 +136,7 @@ namespace BrainMirror.Views
                     var jsonContent = JsonSerializer.Serialize(registerData);
                     var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
                     
-                    var response = await httpClient.PostAsync("http://localhost:3000/api/auth/institution/register", content);
+                    var response = await httpClient.PostAsync("https://bm.miyinbot.com/api/auth/institution/register", content);
                     var responseContent = await response.Content.ReadAsStringAsync();
                     
                     var result = JsonSerializer.Deserialize<JsonElement>(responseContent);

@@ -2595,7 +2595,7 @@ namespace BrainMirror.Views
                         {
                             httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
                             
-                            var reportResponse = await httpClient.GetAsync($"http://localhost:3000/api/test-records/{testRecordId}/report");
+                            var reportResponse = await httpClient.GetAsync($"https://bm.miyinbot.com/api/test-records/{testRecordId}/report");
                             if (reportResponse.IsSuccessStatusCode)
                             {
                                 var reportContent = await reportResponse.Content.ReadAsStringAsync();
@@ -2840,7 +2840,7 @@ namespace BrainMirror.Views
                     var content = new System.Net.Http.StringContent(jsonContent, System.Text.Encoding.UTF8, "application/json");
                     
                     // 发送请求
-                    var response = await httpClient.PostAsync("http://localhost:3000/api/test-records", content);
+                    var response = await httpClient.PostAsync("https://bm.miyinbot.com/api/test-records", content);
                     
                     if (response.IsSuccessStatusCode)
                     {

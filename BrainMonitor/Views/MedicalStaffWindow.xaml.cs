@@ -346,11 +346,8 @@ namespace BrainMirror.Views
 
         private void LoadSampleData()
         {
-            // 初始化示例数据
-            GlobalTesterList.InitializeSampleData();
-            
-            // 根据当前登录的医护人员加载对应的测试者列表
-            TesterDataGrid.ItemsSource = GlobalTesterList.GetCurrentStaffTesters();
+            // 不再使用模拟数据，直接显示空列表
+            TesterDataGrid.ItemsSource = new List<Tester>();
         }
 
         private void UpdateButtonStates()
@@ -370,23 +367,16 @@ namespace BrainMirror.Views
 
             if (string.IsNullOrWhiteSpace(SearchTextBox.Text))
             {
-                // 如果搜索框为空，显示当前医护人员的所有测试者
-                TesterDataGrid.ItemsSource = GlobalTesterList.GetCurrentStaffTesters();
+                // 如果搜索框为空，重新加载数据
+                LoadSampleData();
                 return;
             }
 
             // 获取搜索关键词
             string searchKeyword = SearchTextBox.Text.Trim().ToLower();
             
-            // 过滤当前医护人员的测试者列表
-            var currentTesters = GlobalTesterList.GetCurrentStaffTesters();
-            var filteredTesters = currentTesters.Where(tester => 
-                tester.ID.ToLower().Contains(searchKeyword) || 
-                tester.Name.ToLower().Contains(searchKeyword)
-            ).ToList();
-            
-            // 更新DataGrid显示过滤后的结果
-            TesterDataGrid.ItemsSource = filteredTesters;
+            // 由于不再使用模拟数据，搜索功能暂时显示提示
+            ModernMessageBoxWindow.Show("搜索功能需要从后端获取数据，请先确保已连接服务器", "提示", ModernMessageBoxWindow.MessageBoxType.Info);
         }
 
         private void EnterTestButton_Click(object sender, RoutedEventArgs e)
@@ -418,11 +408,8 @@ namespace BrainMirror.Views
             
             if (result == true)
             {
-                // 测试者添加成功，刷新测试者列表
-                var currentTesters = GlobalTesterList.GetCurrentStaffTesters();
-                TesterDataGrid.ItemsSource = null; // 先清空
-                TesterDataGrid.ItemsSource = currentTesters; // 重新设置
-                TesterDataGrid.Items.Refresh(); // 强制刷新
+                // 测试者添加成功，重新加载数据
+                LoadSampleData();
             }
         }
 
@@ -512,8 +499,8 @@ namespace BrainMirror.Views
                 LogoutButton.Visibility = Visibility.Visible;
                 StaffLoginRegisterButton.Visibility = Visibility.Collapsed;
                 
-                // 重新加载当前医护人员的测试者列表
-                TesterDataGrid.ItemsSource = GlobalTesterList.GetCurrentStaffTesters();
+                // 不再显示模拟数据，等待异步加载真实数据
+                // TesterDataGrid.ItemsSource = GlobalTesterList.GetCurrentStaffTesters();
             }
             else
             {
