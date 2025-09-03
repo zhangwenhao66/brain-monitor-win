@@ -1,8 +1,8 @@
 using System.Windows;
 using ModernWpf;
-using BrainMonitor.Views;
+using BrainMirror.Views;
 
-namespace BrainMonitor
+namespace BrainMirror
 {
     public partial class App : Application
     {

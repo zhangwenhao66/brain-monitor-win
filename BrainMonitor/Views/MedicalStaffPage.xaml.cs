@@ -6,9 +6,9 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Threading.Tasks;
-using BrainMonitor.Services;
+using BrainMirror.Services;
 
-namespace BrainMonitor.Views
+namespace BrainMirror.Views
 {
     public partial class MedicalStaffPage : UserControl, INavigationAware
     {

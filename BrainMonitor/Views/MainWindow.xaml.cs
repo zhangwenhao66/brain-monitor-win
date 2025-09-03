@@ -1,7 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 
-namespace BrainMonitor.Views
+namespace BrainMirror.Views
 {
     public partial class MainWindow : Window
     {

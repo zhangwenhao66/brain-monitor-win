@@ -1,9 +1,9 @@
 #pragma once
 
-#ifdef BRAINMONITORWRAPPER_EXPORTS
-#define BRAINMONITOR_API __declspec(dllexport)
+#ifdef BRAINMIRRORWRAPPER_EXPORTS
+#define BRAINMIRROR_API __declspec(dllexport)
 #else
-#define BRAINMONITOR_API __declspec(dllimport)
+#define BRAINMIRROR_API __declspec(dllimport)
 #endif
 
 // 设备信息结构体 - C++版本
@@ -26,37 +26,37 @@ typedef void (*BattInfoCallback)(int dev, unsigned int level, unsigned int vol);
 typedef void (*EventCallback)(unsigned int event, unsigned int param);
 
 // SDK初始化和清理
-BRAINMONITOR_API int SDK_Init();
-BRAINMONITOR_API void SDK_Cleanup();
-BRAINMONITOR_API const char* SDK_GetVersion();
+BRAINMIRROR_API int SDK_Init();
+BRAINMIRROR_API void SDK_Cleanup();
+BRAINMIRROR_API const char* SDK_GetVersion();
 
 // 端口操作
-BRAINMONITOR_API const char* SDK_CheckPort();
-BRAINMONITOR_API int SDK_ConnectPort(const char* port);
-BRAINMONITOR_API void SDK_DisconnectPort();
+BRAINMIRROR_API const char* SDK_CheckPort();
+BRAINMIRROR_API int SDK_ConnectPort(const char* port);
+BRAINMIRROR_API void SDK_DisconnectPort();
 
 // 设备扫描和连接
-BRAINMONITOR_API int SDK_ScanDevices();
-BRAINMONITOR_API int SDK_GetScanDevicesCount();
-BRAINMONITOR_API int SDK_GetScanDevice(int index, DeviceInfo* device);
-BRAINMONITOR_API int SDK_ConnectDevice(const char* mac, int type);
-BRAINMONITOR_API int SDK_DisconnectDevice(const char* mac);
-BRAINMONITOR_API int SDK_GetConnectedDevicesCount();
-BRAINMONITOR_API int SDK_GetConnectedDevice(int index, DeviceInfo* device);
+BRAINMIRROR_API int SDK_ScanDevices();
+BRAINMIRROR_API int SDK_GetScanDevicesCount();
+BRAINMIRROR_API int SDK_GetScanDevice(int index, DeviceInfo* device);
+BRAINMIRROR_API int SDK_ConnectDevice(const char* mac, int type);
+BRAINMIRROR_API int SDK_DisconnectDevice(const char* mac);
+BRAINMIRROR_API int SDK_GetConnectedDevicesCount();
+BRAINMIRROR_API int SDK_GetConnectedDevice(int index, DeviceInfo* device);
 
 // 数据采集
-BRAINMONITOR_API int SDK_StartDataCollection();
-BRAINMONITOR_API int SDK_StopDataCollection();
+BRAINMIRROR_API int SDK_StartDataCollection();
+BRAINMIRROR_API int SDK_StopDataCollection();
 
 // 回调函数设置
-BRAINMONITOR_API void SDK_SetRawDataCallback(RawDataCallback callback);
-BRAINMONITOR_API void SDK_SetPostDataCallback(PostDataCallback callback);
-BRAINMONITOR_API void SDK_SetBattInfoCallback(BattInfoCallback callback);
-BRAINMONITOR_API void SDK_SetEventCallback(EventCallback callback);
+BRAINMIRROR_API void SDK_SetRawDataCallback(RawDataCallback callback);
+BRAINMIRROR_API void SDK_SetPostDataCallback(PostDataCallback callback);
+BRAINMIRROR_API void SDK_SetBattInfoCallback(BattInfoCallback callback);
+BRAINMIRROR_API void SDK_SetEventCallback(EventCallback callback);
 
 // 设备控制
-BRAINMONITOR_API int SDK_SendCommand(int dev, unsigned char cmd);
-BRAINMONITOR_API int SDK_SendCommandWithPayload(int dev, unsigned char cmd, unsigned char* payload, unsigned char len);
+BRAINMIRROR_API int SDK_SendCommand(int dev, unsigned char cmd);
+BRAINMIRROR_API int SDK_SendCommandWithPayload(int dev, unsigned char cmd, unsigned char* payload, unsigned char len);
 
 #ifdef __cplusplus
 }

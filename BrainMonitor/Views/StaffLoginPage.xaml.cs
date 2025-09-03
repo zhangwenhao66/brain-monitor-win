@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Threading.Tasks;
 
-namespace BrainMonitor.Views
+namespace BrainMirror.Views
 {
     public partial class StaffLoginPage : UserControl, INavigationAware
     {

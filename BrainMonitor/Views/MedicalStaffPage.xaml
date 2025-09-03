@@ -2,7 +2,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:ui="http://schemas.modernwpf.com/2019"
-             xmlns:av="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="av" x:Class="BrainMonitor.Views.MedicalStaffPage"
+             xmlns:av="http://schemas.microsoft.com/expression/blend/2008" xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" mc:Ignorable="av" x:Class="BrainMirror.Views.MedicalStaffPage"
              Background="{DynamicResource SystemControlPageBackgroundAltHighBrush}" av:DesignWidth="894.029">
 
     <Grid Margin="20" MouseLeftButtonDown="MainGrid_MouseLeftButtonDown">

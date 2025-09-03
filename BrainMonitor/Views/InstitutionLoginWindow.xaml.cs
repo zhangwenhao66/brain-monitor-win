@@ -2,12 +2,12 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Linq;
 using System.Windows.Media.Imaging;
-using BrainMonitor.Views;
+using BrainMirror.Views;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 
-namespace BrainMonitor.Views
+namespace BrainMirror.Views
 {
     public partial class InstitutionLoginWindow : Window
     {

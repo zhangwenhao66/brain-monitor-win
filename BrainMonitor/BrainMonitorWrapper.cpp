@@ -1,4 +1,4 @@
-#define BRAINMONITORWRAPPER_EXPORTS
+#define BRAINMIRRORWRAPPER_EXPORTS
 #include "brnpro_if.h"
 #include "ble_device.h"
 #include "BrainMonitorWrapper.h"
@@ -70,7 +70,7 @@ void convertToDeviceInfo(ble_device& device, DeviceInfo* info) {
 }
 
 // SDK API implementation
-BRAINMONITOR_API int SDK_Init() {
+BRAINMIRROR_API int SDK_Init() {
     if (g_initialized) {
         return 1; // Already initialized
     }
@@ -97,14 +97,14 @@ BRAINMONITOR_API int SDK_Init() {
     }
 }
 
-BRAINMONITOR_API void SDK_Cleanup() {
+BRAINMIRROR_API void SDK_Cleanup() {
     if (g_initialized) {
         jfsdk_cleanup();
         g_initialized = false;
     }
 }
 
-BRAINMONITOR_API const char* SDK_GetVersion() {
+BRAINMIRROR_API const char* SDK_GetVersion() {
     static std::string version;
     try {
         version = jfsdk_version();
@@ -115,7 +115,7 @@ BRAINMONITOR_API const char* SDK_GetVersion() {
     }
 }
 
-BRAINMONITOR_API const char* SDK_CheckPort() {
+BRAINMIRROR_API const char* SDK_CheckPort() {
     static std::string port;
     try {
         port = jfboard_checkPort();
@@ -126,7 +126,7 @@ BRAINMONITOR_API const char* SDK_CheckPort() {
     }
 }
 
-BRAINMONITOR_API int SDK_ConnectPort(const char* port) {
+BRAINMIRROR_API int SDK_ConnectPort(const char* port) {
     if (!port) return 0;
     
     try {
@@ -143,7 +143,7 @@ BRAINMONITOR_API int SDK_ConnectPort(const char* port) {
     }
 }
 
-BRAINMONITOR_API void SDK_DisconnectPort() {
+BRAINMIRROR_API void SDK_DisconnectPort() {
     try {
         jfboard_disconnect();
         g_currentPort.clear();
@@ -153,7 +153,7 @@ BRAINMONITOR_API void SDK_DisconnectPort() {
     }
 }
 
-BRAINMONITOR_API int SDK_ScanDevices() {
+BRAINMIRROR_API int SDK_ScanDevices() {
     try {
         std::lock_guard<std::mutex> lock(g_deviceMutex);
         if (jfboard_scan()) {
@@ -167,12 +167,12 @@ BRAINMONITOR_API int SDK_ScanDevices() {
     }
 }
 
-BRAINMONITOR_API int SDK_GetScanDevicesCount() {
+BRAINMIRROR_API int SDK_GetScanDevicesCount() {
     std::lock_guard<std::mutex> lock(g_deviceMutex);
     return static_cast<int>(g_scanDevices.size());
 }
 
-BRAINMONITOR_API int SDK_GetScanDevice(int index, DeviceInfo* device) {
+BRAINMIRROR_API int SDK_GetScanDevice(int index, DeviceInfo* device) {
     if (!device || index < 0) return 0;
     
     std::lock_guard<std::mutex> lock(g_deviceMutex);
@@ -182,7 +182,7 @@ BRAINMONITOR_API int SDK_GetScanDevice(int index, DeviceInfo* device) {
     return 1;
 }
 
-BRAINMONITOR_API int SDK_ConnectDevice(const char* mac, int type) {
+BRAINMIRROR_API int SDK_ConnectDevice(const char* mac, int type) {
     if (!mac) return 0;
     
     try {
@@ -204,7 +204,7 @@ BRAINMONITOR_API int SDK_ConnectDevice(const char* mac, int type) {
     }
 }
 
-BRAINMONITOR_API int SDK_DisconnectDevice(const char* mac) {
+BRAINMIRROR_API int SDK_DisconnectDevice(const char* mac) {
     if (!mac) return 0;
     
     try {
@@ -224,12 +224,12 @@ BRAINMONITOR_API int SDK_DisconnectDevice(const char* mac) {
     }
 }
 
-BRAINMONITOR_API int SDK_GetConnectedDevicesCount() {
+BRAINMIRROR_API int SDK_GetConnectedDevicesCount() {
     std::lock_guard<std::mutex> lock(g_deviceMutex);
     return static_cast<int>(g_connectedDevices.size());
 }
 
-BRAINMONITOR_API int SDK_GetConnectedDevice(int index, DeviceInfo* device) {
+BRAINMIRROR_API int SDK_GetConnectedDevice(int index, DeviceInfo* device) {
     if (!device || index < 0) return 0;
     
     std::lock_guard<std::mutex> lock(g_deviceMutex);
@@ -239,7 +239,7 @@ BRAINMONITOR_API int SDK_GetConnectedDevice(int index, DeviceInfo* device) {
     return 1;
 }
 
-BRAINMONITOR_API int SDK_StartDataCollection() {
+BRAINMIRROR_API int SDK_StartDataCollection() {
     try {
         return brainpro_start() ? 1 : 0;
     }
@@ -248,7 +248,7 @@ BRAINMONITOR_API int SDK_StartDataCollection() {
     }
 }
 
-BRAINMONITOR_API int SDK_StopDataCollection() {
+BRAINMIRROR_API int SDK_StopDataCollection() {
     try {
         return brainpro_stop() ? 1 : 0;
     }
@@ -257,23 +257,23 @@ BRAINMONITOR_API int SDK_StopDataCollection() {
     }
 }
 
-BRAINMONITOR_API void SDK_SetRawDataCallback(RawDataCallback callback) {
+BRAINMIRROR_API void SDK_SetRawDataCallback(RawDataCallback callback) {
     g_rawDataCallback = callback;
 }
 
-BRAINMONITOR_API void SDK_SetPostDataCallback(PostDataCallback callback) {
+BRAINMIRROR_API void SDK_SetPostDataCallback(PostDataCallback callback) {
     g_postDataCallback = callback;
 }
 
-BRAINMONITOR_API void SDK_SetBattInfoCallback(BattInfoCallback callback) {
+BRAINMIRROR_API void SDK_SetBattInfoCallback(BattInfoCallback callback) {
     g_battInfoCallback = callback;
 }
 
-BRAINMONITOR_API void SDK_SetEventCallback(EventCallback callback) {
+BRAINMIRROR_API void SDK_SetEventCallback(EventCallback callback) {
     g_eventCallback = callback;
 }
 
-BRAINMONITOR_API int SDK_SendCommand(int dev, unsigned char cmd) {
+BRAINMIRROR_API int SDK_SendCommand(int dev, unsigned char cmd) {
     try {
         return brainpro_command(dev, cmd) ? 1 : 0;
     }
@@ -282,7 +282,7 @@ BRAINMONITOR_API int SDK_SendCommand(int dev, unsigned char cmd) {
     }
 }
 
-BRAINMONITOR_API int SDK_SendCommandWithPayload(int dev, unsigned char cmd, unsigned char* payload, unsigned char len) {
+BRAINMIRROR_API int SDK_SendCommandWithPayload(int dev, unsigned char cmd, unsigned char* payload, unsigned char len) {
     try {
         return brainpro_command(dev, cmd, payload, len) ? 1 : 0;
     }

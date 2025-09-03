@@ -2,7 +2,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Shapes;
 
-namespace BrainMonitor.Views
+namespace BrainMirror.Views
 {
     public partial class TestWindow : Window
     {

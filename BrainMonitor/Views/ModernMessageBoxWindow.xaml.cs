@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Media;
 using System.Media;
 
-namespace BrainMonitor.Views
+namespace BrainMirror.Views
 {
     public partial class ModernMessageBoxWindow : Window
     {

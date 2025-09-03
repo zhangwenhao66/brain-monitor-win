@@ -1,6 +1,6 @@
-# 脑电波检测软件 (Brain Monitor)
+# 脑镜BrainMirror
 
-这是一个基于.NET 6和WPF框架开发的脑电波检测与健康风险评估软件。
+这是一个基于.NET 8和WPF框架开发的脑电波检测与健康风险评估软件。
 
 ## 项目概述
 
@@ -46,7 +46,7 @@
 
 ## 开发环境
 
-- **.NET 6.0**
+- **.NET 8.0**
 - **WPF (Windows Presentation Foundation)**
 - **Visual Studio 2022**
 - **C#**
@@ -54,7 +54,7 @@
 ## 项目结构
 
 ```
-BrainMonitor/
+BrainMirror/
 ├── BrainMonitor.sln          # 解决方案文件
 ├── BrainMonitor/
 │   ├── BrainMonitor.csproj   # 项目文件
@@ -76,7 +76,7 @@ BrainMonitor/
 
 ## 运行说明
 
-1. 确保已安装.NET 6.0 SDK
+1. 确保已安装.NET 8.0 SDK
 2. 使用Visual Studio 2022打开`BrainMonitor.sln`
 3. 编译并运行项目
 4. 应用程序将从机构登录界面开始

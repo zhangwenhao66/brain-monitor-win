@@ -7,13 +7,13 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Threading;
-using BrainMonitor.SDK;
+using BrainMirror.SDK;
 using System.Runtime.InteropServices;
 using System.IO.Ports;
-using BrainMonitor.Models;
+using BrainMirror.Models;
 using System.Text.Json;
 
-namespace BrainMonitor.Views
+namespace BrainMirror.Views
 {
     public partial class TestPage : UserControl, INavigationAware
     {

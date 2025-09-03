@@ -4,9 +4,9 @@ using System.Windows.Controls;
 using System.Threading.Tasks;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using BrainMonitor.Services;
+using BrainMirror.Services;
 
-namespace BrainMonitor.Views
+namespace BrainMirror.Views
 {
     public partial class TestHistoryPage : UserControl, INavigationAware
     {

@@ -5,9 +5,9 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using Newtonsoft.Json;
-using BrainMonitor.Services;
+using BrainMirror.Services;
 
-namespace BrainMonitor.Views
+namespace BrainMirror.Views
 {
     public partial class ReportPage : UserControl, INavigationAware
     {

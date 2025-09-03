@@ -2,9 +2,9 @@ using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using System.Threading.Tasks;
-using BrainMonitor.Services;
+using BrainMirror.Services;
 
-namespace BrainMonitor.Views
+namespace BrainMirror.Views
 {
     public partial class TestHistoryWindow : Window
     {

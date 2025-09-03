@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic; // Added for List
 
-namespace BrainMonitor.Models
+namespace BrainMirror.Models
 {
     // 上传响应数据类
     public class UploadResponse

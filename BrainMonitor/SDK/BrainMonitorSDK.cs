@@ -2,7 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace BrainMonitor.SDK
+namespace BrainMirror.SDK
 {
     // 设备信息结构体
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]

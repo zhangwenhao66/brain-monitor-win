@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using BrainMonitor.Services;
-using BrainMonitor.Views;
+using BrainMirror.Services;
+using BrainMirror.Views;
 
-namespace BrainMonitor.Services
+namespace BrainMirror.Services
 {
     public static class TesterService
     {

@@ -5,9 +5,9 @@ using System.Windows.Input;
 using System.Linq; // Added for .Where() and .ToList()
 using System; // Added for DateTime
 using System.Threading.Tasks;
-using BrainMonitor.Services;
+using BrainMirror.Services;
 
-namespace BrainMonitor.Views
+namespace BrainMirror.Views
 {
     public class MedicalStaff
     {

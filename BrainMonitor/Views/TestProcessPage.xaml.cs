@@ -8,10 +8,10 @@ using System.Collections.Generic;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using BrainMonitor.Models;
-using BrainMonitor.Services;
+using BrainMirror.Models;
+using BrainMirror.Services;
 
-namespace BrainMonitor.Views
+namespace BrainMirror.Views
 {
     public partial class TestProcessPage : UserControl
     {

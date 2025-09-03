@@ -7,7 +7,7 @@ using System.Collections.Generic; // Added for List
 using System.Net.Sockets; // Added for SocketException
 using System.IO; // Added for IOException
 
-namespace BrainMonitor.Services
+namespace BrainMirror.Services
 {
     public class HttpService
     {

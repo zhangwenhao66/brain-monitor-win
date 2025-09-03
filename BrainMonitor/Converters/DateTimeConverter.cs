@@ -2,7 +2,7 @@ using System;
 using System.Globalization;
 using System.Windows.Data;
 
-namespace BrainMonitor.Converters
+namespace BrainMirror.Converters
 {
     public class DateTimeConverter : IValueConverter
     {

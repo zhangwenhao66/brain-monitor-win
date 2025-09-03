@@ -1,6 +1,6 @@
 using System.Windows;
 
-namespace BrainMonitor.Views
+namespace BrainMirror.Views
 {
     public partial class ReportWindow : Window
     {

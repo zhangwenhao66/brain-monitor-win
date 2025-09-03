@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using System.Linq;
 
-namespace BrainMonitor.Services
+namespace BrainMirror.Services
 {
     /// <summary>
     /// 脑电数据处理服务类

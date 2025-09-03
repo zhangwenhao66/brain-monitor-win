@@ -2,10 +2,10 @@ using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Threading.Tasks;
-using BrainMonitor.Services;
+using BrainMirror.Services;
 using System.Text.Json;
 
-namespace BrainMonitor.Views
+namespace BrainMirror.Views
 {
     public partial class InstitutionLoginPage : UserControl
     {

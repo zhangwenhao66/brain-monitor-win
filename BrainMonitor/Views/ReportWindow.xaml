@@ -1,8 +1,8 @@
-<Window x:Class="BrainMonitor.Views.ReportWindow"
+<Window x:Class="BrainMirror.Views.ReportWindow"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ui="http://schemas.modernwpf.com/2019"
-    Title="报告界面" Height="800" Width="1000"
+    Title="脑镜BrainMirror - 报告界面" Height="800" Width="1000"
     WindowStartupLocation="CenterScreen"
     Background="#FAFAFA">
 

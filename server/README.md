@@ -1,4 +1,4 @@
-# Brain Monitor Backend Server
+# 脑镜BrainMirror Backend Server
 
 脑电波监测系统后端服务，基于 Node.js + Express + MySQL 构建。
 
@@ -309,7 +309,7 @@ MIT License
 
 ## 联系方式
 
-- 项目维护者: Brain Monitor Team
-- 邮箱: support@brainmonitor.com
-- 项目地址: https://github.com/brainmonitor/server
+- 项目维护者: 脑镜BrainMirror Team
+- 邮箱: support@brainmirror.com
+- 项目地址: https://github.com/brainmirror/server
 

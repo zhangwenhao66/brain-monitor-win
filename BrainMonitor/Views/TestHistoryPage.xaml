@@ -1,8 +1,8 @@
-<UserControl x:Class="BrainMonitor.Views.TestHistoryPage"
+<UserControl x:Class="BrainMirror.Views.TestHistoryPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:ui="http://schemas.modernwpf.com/2019"
-    xmlns:converters="clr-namespace:BrainMonitor.Converters"
+    xmlns:converters="clr-namespace:BrainMirror.Converters"
     Background="#FAFAFA">
     
     <UserControl.Resources>
