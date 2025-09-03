@@ -41,10 +41,10 @@ namespace BrainMonitor.Views
             {
                 // 显示加载状态
                 // 这里可以添加一个加载指示器
-                
+
                 // 从后端获取测试历史数据
                 var historyRecords = await TestHistoryService.GetAllTestHistoryAsync(currentTester.ID);
-                
+
                 if (historyRecords != null && historyRecords.Count > 0)
                 {
                     HistoryDataGrid.ItemsSource = historyRecords;

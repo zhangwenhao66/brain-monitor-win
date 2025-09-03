@@ -29,10 +29,17 @@ namespace BrainMonitor.Views
         {
             try
             {
+                // 检查机构ID是否有效
+                if (GlobalInstitutionManager.CurrentInstitutionDbId <= 0)
+                {
+                    throw new Exception("请先登录机构");
+                }
+
                 var loginRequest = new MedicalStaffLoginRequest
                 {
                     Account = account,
-                    Password = password
+                    Password = password,
+                    InstitutionId = GlobalInstitutionManager.CurrentInstitutionDbId
                 };
 
                 var response = await HttpService.PostAsync<ApiResponse<MedicalStaffLoginResponse>>("/auth/medical-staff/login", loginRequest);

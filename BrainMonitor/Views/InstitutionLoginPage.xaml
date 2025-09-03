@@ -4,100 +4,259 @@
              xmlns:ui="http://schemas.modernwpf.com/2019"
              Background="{DynamicResource ApplicationPageBackgroundThemeBrush}">
     
+    <UserControl.Resources>
+        <!-- 现代Tab样式 -->
+        <Style x:Key="ModernTabControl" TargetType="TabControl">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabControl">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="480"/>
+                            </Grid.RowDefinitions>
+                            
+                            <!-- Tab头部区域 -->
+                            <Border Grid.Row="0" 
+                                    Background="#F5F5F5" 
+                                    CornerRadius="12,12,0,0"
+                                    Margin="0,0,0,0">
+                                <TabPanel x:Name="HeaderPanel" 
+                                         IsItemsHost="True" 
+                                         Background="Transparent"
+                                         HorizontalAlignment="Center"
+                                         Margin="0"/>
+                            </Border>
+                            
+                            <!-- Tab内容区域 - 固定高度 -->
+                            <Border Grid.Row="1" 
+                                    Background="White" 
+                                    CornerRadius="0,0,12,12"
+                                    BorderBrush="#E0E0E0"
+                                    BorderThickness="1,0,1,1"
+                                    Height="480">
+                                <ContentPresenter x:Name="PART_SelectedContentHost" 
+                                                 ContentSource="SelectedContent"
+                                                 VerticalAlignment="Top"/>
+                            </Border>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        
+        <!-- 现代Tab项样式 -->
+        <Style x:Key="ModernTabItem" TargetType="TabItem">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Height" Value="60"/>
+            <Setter Property="MinWidth" Value="120"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TabItem">
+                        <Border x:Name="TabBorder" 
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="Transparent"
+                                BorderThickness="0,0,0,3"
+                                CornerRadius="8,8,0,0"
+                                Margin="4,4,4,0">
+                            <ContentPresenter x:Name="ContentSite"
+                                            VerticalAlignment="Center"
+                                            HorizontalAlignment="Center"
+                                            ContentSource="Header"
+                                            Margin="20,0"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="TabBorder" Property="Background" Value="White"/>
+                                <Setter TargetName="TabBorder" Property="BorderBrush" Value="#0078D4"/>
+                                <Setter Property="Foreground" Value="#0078D4"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="False">
+                                <Setter Property="Foreground" Value="#666666"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="TabBorder" Property="Background" Value="#F0F0F0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+    
     <Grid Margin="40">
+        <!-- 标题区域 -->
+        <TextBlock x:Name="TitleText"
+                   Text="机构登录"
+                   FontSize="24"
+                   FontWeight="Bold"
+                   Foreground="#0078D4"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Top"
+                   Margin="0,0,0,40" />
+        
         <Border Style="{StaticResource CardStyle}" 
                 VerticalAlignment="Center" 
                 HorizontalAlignment="Center"
-                Width="370">
-            <StackPanel Margin="30,30,30,20">
-                <!-- 标题 -->
-                <TextBlock Text="机构登录" 
-                           Style="{StaticResource TitleText}"
-                           Margin="0,0,0,30"/>
-                
-                <!-- 机构ID输入 -->
-                <StackPanel Margin="0,0,0,25">
-                    <TextBlock Text="机构ID" 
-                               Style="{StaticResource ModernLabel}"/>
-                    <TextBox x:Name="InstitutionIdTextBox" 
-                             Style="{StaticResource ModernTextBox}"
-                             ui:ControlHelper.PlaceholderText="请输入机构ID"/>
-                </StackPanel>
-                
-                <!-- 密码输入 -->
-                <StackPanel Margin="0,0,0,35">
-                    <TextBlock Text="密码" 
-                               Style="{StaticResource ModernLabel}"/>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        
-                        <PasswordBox x:Name="PasswordBox" 
-                                     Style="{StaticResource ModernPasswordBox}"
-                                     Grid.Column="0"
-                                     PasswordChar="●"
-                                     ui:ControlHelper.PlaceholderText="请输入密码"
-                                     Visibility="Visible"/>
-                        
-                        <TextBox x:Name="PasswordTextBox"
-                                 Style="{StaticResource ModernTextBox}"
-                                 Grid.Column="0"
-                                 ui:ControlHelper.PlaceholderText="请输入密码"
-                                 Visibility="Collapsed"/>
-                        
-                        <Button x:Name="TogglePasswordButton"
-                                Grid.Column="1"
-                                Width="40"
-                                Height="40"
-                                Margin="8,0,0,0"
-                                Style="{DynamicResource DefaultButtonStyle}"
-                                Background="Transparent"
-                                BorderThickness="0"
-                                Click="TogglePasswordButton_Click">
-                            <ui:FontIcon x:Name="TogglePasswordIcon" 
-                                         Glyph="&#xE7B3;" 
-                                         FontSize="16"/>
-                        </Button>
-                    </Grid>
-                </StackPanel>
-                
-
-                
-                <!-- 隐私协议复选框 -->
-                <StackPanel Orientation="Horizontal" 
-                            HorizontalAlignment="Left" 
-                            Margin="0,0,0,25">
-                    <CheckBox x:Name="PrivacyCheckBox" 
-                              IsChecked="True" 
-                              VerticalAlignment="Center" 
-                              Margin="0,0,-90,0"/>
-                    <TextBlock Text="数据隐私等协议" 
-                               FontSize="14" 
-                               VerticalAlignment="Center"
-                               Padding="5,0,0,0"/>
-                </StackPanel>
-                
-                <!-- 登录按钮 -->
-                <Border Background="#0078D4" 
-                        CornerRadius="6" 
-                        Width="150" 
-                        Height="45"
-                        HorizontalAlignment="Center"
-                        Margin="0,20,0,20">
-                    <Button x:Name="LoginButton"
-                            Content="登录" 
-                            Background="Transparent"
-                            Foreground="White"
-                            BorderThickness="0"
-                            FontSize="16"
-                            FontWeight="SemiBold"
-                            Click="LoginButton_Click"
-                            Width="150"
-                            Height="45"
-                            Cursor="Hand"/>
-                </Border>
+                Width="420">
+            <StackPanel>
+                <!-- Tab控件 -->
+                <TabControl x:Name="MainTabControl" 
+                           Margin="0,0,0,30"
+                           Style="{StaticResource ModernTabControl}"
+                           SelectionChanged="MainTabControl_SelectionChanged">
+                    
+                    <!-- 登录Tab -->
+                    <TabItem Header="登录" x:Name="LoginTab" Style="{StaticResource ModernTabItem}">
+                        <StackPanel Margin="30,30,30,20">
+                            <!-- 机构ID输入 -->
+                            <StackPanel Margin="0,0,0,25">
+                                <TextBlock Text="机构ID" Style="{StaticResource ModernLabel}"/>
+                                <TextBox x:Name="LoginInstitutionIdTextBox" 
+                                         Style="{StaticResource ModernTextBox}"
+                                         ui:ControlHelper.PlaceholderText="请输入机构ID"/>
+                            </StackPanel>
+                            
+                            <!-- 密码输入 -->
+                            <StackPanel Margin="0,0,0,35">
+                                <TextBlock Text="密码" Style="{StaticResource ModernLabel}"/>
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    
+                                    <PasswordBox x:Name="LoginPasswordBox" 
+                                                 Style="{StaticResource ModernPasswordBox}"
+                                                 Grid.Column="0"
+                                                 PasswordChar="●"
+                                                 ui:ControlHelper.PlaceholderText="请输入密码"
+                                                 Visibility="Visible"/>
+                                    
+                                    <TextBox x:Name="LoginPasswordTextBox"
+                                             Style="{StaticResource ModernTextBox}"
+                                             Grid.Column="0"
+                                             ui:ControlHelper.PlaceholderText="请输入密码"
+                                             Visibility="Collapsed"/>
+                                    
+                                    <Button x:Name="LoginTogglePasswordButton"
+                                            Grid.Column="1"
+                                            Width="40"
+                                            Height="40"
+                                            Margin="8,0,0,0"
+                                            Style="{DynamicResource DefaultButtonStyle}"
+                                            Background="Transparent"
+                                            BorderThickness="0"
+                                            Click="LoginTogglePasswordButton_Click">
+                                        <ui:FontIcon x:Name="LoginTogglePasswordIcon" 
+                                                     Glyph="&#xE7B3;" 
+                                                     FontSize="16"/>
+                                    </Button>
+                                </Grid>
+                            </StackPanel>
+                            
+                            <!-- 隐私协议复选框 -->
+                            <StackPanel Orientation="Horizontal" 
+                                        HorizontalAlignment="Left" 
+                                        Margin="0,0,0,25">
+                                <CheckBox x:Name="LoginPrivacyCheckBox" 
+                                          IsChecked="True" 
+                                          Style="{StaticResource ModernCheckBox}"
+                                          VerticalAlignment="Center" 
+                                          Margin="0,0,-90,0"/>
+                                <TextBlock Text="数据隐私等协议" 
+                                           FontSize="14" 
+                                           Foreground="{DynamicResource TextFillColorSecondaryBrush}"
+                                           VerticalAlignment="Center"/>
+                            </StackPanel>
+                            
+                            <!-- 登录按钮 -->
+                            <Border Background="#0078D4" 
+                                    CornerRadius="6" 
+                                    Width="150" 
+                                    Height="45"
+                                    HorizontalAlignment="Center"
+                                    Margin="0,20,0,20">
+                                <Button x:Name="LoginButton"
+                                        Content="登录" 
+                                        Background="Transparent"
+                                        Foreground="White"
+                                        BorderThickness="0"
+                                        FontSize="16"
+                                        FontWeight="SemiBold"
+                                        Click="LoginButton_Click"
+                                        Width="150"
+                                        Height="45"
+                                        Cursor="Hand"/>
+                            </Border>
+                        </StackPanel>
+                    </TabItem>
+                    
+                    <!-- 注册Tab -->
+                    <TabItem Header="注册" x:Name="RegisterTab" Style="{StaticResource ModernTabItem}">
+                        <StackPanel Margin="30,30,30,20">
+                            <!-- 机构名称输入 -->
+                            <StackPanel Margin="0,0,0,18">
+                                <TextBlock Text="机构名称" Style="{StaticResource ModernLabel}"/>
+                                <TextBox x:Name="RegisterInstitutionNameTextBox" 
+                                         Style="{StaticResource ModernTextBox}"
+                                         ui:ControlHelper.PlaceholderText="请输入机构名称"/>
+                            </StackPanel>
+                            
+                            <!-- 机构ID输入 -->
+                            <StackPanel Margin="0,0,0,18">
+                                <TextBlock Text="机构ID" Style="{StaticResource ModernLabel}"/>
+                                <TextBox x:Name="RegisterInstitutionIdTextBox" 
+                                         Style="{StaticResource ModernTextBox}"
+                                         ui:ControlHelper.PlaceholderText="请输入机构ID"/>
+                            </StackPanel>
+                            
+                            <!-- 密码输入 -->
+                            <StackPanel Margin="0,0,0,18">
+                                <TextBlock Text="密码" Style="{StaticResource ModernLabel}"/>
+                                <PasswordBox x:Name="RegisterPasswordBox" 
+                                             Style="{StaticResource ModernPasswordBox}"
+                                             ui:ControlHelper.PlaceholderText="请输入密码"/>
+                            </StackPanel>
+                            
+                            <!-- 确认密码输入 -->
+                            <StackPanel Margin="0,0,0,25">
+                                <TextBlock Text="确认密码" Style="{StaticResource ModernLabel}"/>
+                                <PasswordBox x:Name="RegisterConfirmPasswordBox" 
+                                             Style="{StaticResource ModernPasswordBox}"
+                                             ui:ControlHelper.PlaceholderText="请再次输入密码"/>
+                            </StackPanel>
+                            
+                            <!-- 注册按钮 -->
+                            <Border Background="#0078D4" 
+                                    CornerRadius="6" 
+                                    Width="150" 
+                                    Height="45"
+                                    HorizontalAlignment="Center"
+                                    Margin="0,20,0,20">
+                                <Button x:Name="RegisterButton"
+                                        Content="注册" 
+                                        Background="Transparent"
+                                        Foreground="White"
+                                        BorderThickness="0"
+                                        FontSize="16"
+                                        FontWeight="SemiBold"
+                                        Click="RegisterButton_Click"
+                                        Width="150"
+                                        Height="45"
+                                        Cursor="Hand"/>
+                            </Border>
+                        </StackPanel>
+                    </TabItem>
+                </TabControl>
             </StackPanel>
         </Border>
     </Grid>

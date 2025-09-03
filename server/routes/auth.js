@@ -7,6 +7,71 @@ const { JWT_SECRET, JWT_EXPIRES_IN } = require('../config/jwt');
 
 const router = express.Router();
 
+// 机构注册
+router.post('/institution/register', async (req, res) => {
+    try {
+        const { 
+            institutionName, 
+            institutionId, 
+            password, 
+            contactPerson, 
+            contactPhone, 
+            address 
+        } = req.body;
+
+        // 验证必填字段
+        if (!institutionName || !institutionId || !password) {
+            return res.status(400).json({
+                success: false,
+                message: '请填写机构名称、机构ID和密码'
+            });
+        }
+
+        // 检查机构ID是否已存在
+        const [existingInstitution] = await query(
+            'SELECT id FROM institutions WHERE institution_id = ?',
+            [institutionId]
+        );
+
+        if (existingInstitution) {
+            return res.status(400).json({
+                success: false,
+                message: '机构ID已存在'
+            });
+        }
+
+        // 加密密码
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // 插入机构记录
+        const result = await query(
+            `INSERT INTO institutions 
+             (institution_id, institution_name, password, contact_person, contact_phone, address) 
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [institutionId, institutionName, hashedPassword, contactPerson || null, contactPhone || null, address || null]
+        );
+
+        res.status(201).json({
+            success: true,
+            message: '机构注册成功',
+            data: {
+                id: result.insertId,
+                institutionId,
+                institutionName,
+                contactPerson: contactPerson || '',
+                contactPhone: contactPhone || ''
+            }
+        });
+
+    } catch (error) {
+        console.error('机构注册错误:', error);
+        res.status(500).json({
+            success: false,
+            message: '服务器内部错误'
+        });
+    }
+});
+
 // 机构登录
 router.post('/institution/login', async (req, res) => {
     try {
@@ -92,29 +157,29 @@ router.post('/medical-staff/register', async (req, res) => {
             });
         }
 
-        // 检查工号是否已存在
+        // 检查工号是否在当前机构内已存在
         const [existingStaffId] = await query(
-            'SELECT id FROM medical_staff WHERE staff_id = ?',
-            [staffId]
+            'SELECT id FROM medical_staff WHERE staff_id = ? AND institution_id = ?',
+            [staffId, institutionId]
         );
 
         if (existingStaffId) {
             return res.status(400).json({
                 success: false,
-                message: '工号已存在'
+                message: '工号在当前机构内已存在'
             });
         }
 
-        // 检查账号是否已存在
+        // 检查账号是否在当前机构内已存在
         const [existingAccount] = await query(
-            'SELECT id FROM medical_staff WHERE account = ?',
-            [account]
+            'SELECT id FROM medical_staff WHERE account = ? AND institution_id = ?',
+            [account, institutionId]
         );
 
         if (existingAccount) {
             return res.status(400).json({
                 success: false,
-                message: '账号已存在'
+                message: '账号在当前机构内已存在'
             });
         }
 
@@ -165,25 +230,25 @@ router.post('/medical-staff/register', async (req, res) => {
 // 医护人员登录
 router.post('/medical-staff/login', async (req, res) => {
     try {
-        const { account, password } = req.body;
+        const { account, password, institutionId } = req.body;
 
         // 验证必填字段
-        if (!account || !password) {
+        if (!account || !password || !institutionId) {
             return res.status(400).json({
                 success: false,
-                message: '请填写账号和密码'
+                message: '请填写账号、密码和机构ID'
             });
         }
 
-        // 查询医护人员信息
+        // 查询医护人员信息 - 根据账号和机构ID查找
         const [staff] = await query(
             `SELECT ms.id, ms.staff_id, ms.name, ms.account, ms.password, ms.phone, 
                     ms.department, ms.position, ms.institution_id, ms.is_active,
                     i.institution_id as institution_code, i.institution_name
              FROM medical_staff ms
              JOIN institutions i ON ms.institution_id = i.id
-             WHERE ms.account = ?`,
-            [account]
+             WHERE ms.account = ? AND ms.institution_id = ?`,
+            [account, institutionId]
         );
 
         if (!staff) {

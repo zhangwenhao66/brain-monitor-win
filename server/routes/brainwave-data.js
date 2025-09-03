@@ -69,8 +69,9 @@ router.post('/upload', authenticateToken, upload.single('csvFile'), async (req, 
 
         // 文件上传权限验证 - 只需要验证用户身份
 
-        // 构建最终文件路径
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        // 构建最终文件路径 - 使用北京时间
+        const beijingTime = new Date(new Date().getTime() + (8 * 60 * 60 * 1000)); // UTC+8
+        const timestamp = beijingTime.toISOString().replace(/[:.]/g, '-').slice(0, 19);
         const fileName = `${timestamp}_${dataType}.csv`;
         const finalDir = path.join(__dirname, '..', 'data', institutionId, staffName, testerName);
         const finalPath = path.join(finalDir, fileName);

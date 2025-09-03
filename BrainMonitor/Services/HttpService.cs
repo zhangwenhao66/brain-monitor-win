@@ -262,6 +262,47 @@ namespace BrainMonitor.Services
         public int InstitutionDbId { get; set; }
     }
 
+    // 机构注册请求模型
+    public class InstitutionRegisterRequest
+    {
+        [JsonProperty("institutionName")]
+        public string InstitutionName { get; set; } = string.Empty;
+        
+        [JsonProperty("institutionId")]
+        public string InstitutionId { get; set; } = string.Empty;
+        
+        [JsonProperty("password")]
+        public string Password { get; set; } = string.Empty;
+        
+        [JsonProperty("contactPerson")]
+        public string ContactPerson { get; set; } = string.Empty;
+        
+        [JsonProperty("contactPhone")]
+        public string ContactPhone { get; set; } = string.Empty;
+        
+        [JsonProperty("address")]
+        public string Address { get; set; } = string.Empty;
+    }
+
+    // 机构注册响应模型
+    public class InstitutionRegisterResponse
+    {
+        [JsonProperty("id")]
+        public int Id { get; set; }
+        
+        [JsonProperty("institutionId")]
+        public string InstitutionId { get; set; } = string.Empty;
+        
+        [JsonProperty("institutionName")]
+        public string InstitutionName { get; set; } = string.Empty;
+        
+        [JsonProperty("contactPerson")]
+        public string ContactPerson { get; set; } = string.Empty;
+        
+        [JsonProperty("contactPhone")]
+        public string ContactPhone { get; set; } = string.Empty;
+    }
+
     // 医护人员注册请求模型
     public class MedicalStaffRegisterRequest
     {
@@ -298,6 +339,9 @@ namespace BrainMonitor.Services
         
         [JsonProperty("password")]
         public string Password { get; set; } = string.Empty;
+        
+        [JsonProperty("institutionId")]
+        public int InstitutionId { get; set; }
     }
 
     // 医护人员登录响应模型

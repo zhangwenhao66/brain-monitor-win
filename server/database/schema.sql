@@ -18,9 +18,9 @@ CREATE TABLE institutions (
 -- 医护人员表
 CREATE TABLE medical_staff (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    staff_id VARCHAR(100) UNIQUE NOT NULL COMMENT '工号',
+    staff_id VARCHAR(100) NOT NULL COMMENT '工号',
     name VARCHAR(100) NOT NULL COMMENT '姓名',
-    account VARCHAR(100) UNIQUE NOT NULL COMMENT '登录账号',
+    account VARCHAR(100) NOT NULL COMMENT '登录账号',
     password VARCHAR(255) NOT NULL COMMENT '密码（加密）',
     phone VARCHAR(20) COMMENT '联系电话',
     department VARCHAR(100) COMMENT '科室',
@@ -29,13 +29,15 @@ CREATE TABLE medical_staff (
     is_active BOOLEAN DEFAULT TRUE COMMENT '是否激活',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (institution_id) REFERENCES institutions(id) ON DELETE CASCADE
+    FOREIGN KEY (institution_id) REFERENCES institutions(id) ON DELETE CASCADE,
+    UNIQUE KEY uk_staff_id_institution (staff_id, institution_id),
+    UNIQUE KEY uk_account_institution (account, institution_id)
 );
 
 -- 测试者表
 CREATE TABLE testers (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    tester_id VARCHAR(100) UNIQUE NOT NULL COMMENT '测试者ID',
+    tester_id VARCHAR(100) NOT NULL COMMENT '测试者ID',
     name VARCHAR(100) NOT NULL COMMENT '姓名',
     age VARCHAR(10) COMMENT '年龄',
     gender ENUM('男', '女', '其他') COMMENT '性别',
@@ -45,7 +47,8 @@ CREATE TABLE testers (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (medical_staff_id) REFERENCES medical_staff(id) ON DELETE CASCADE,
-    FOREIGN KEY (institution_id) REFERENCES institutions(id) ON DELETE CASCADE
+    FOREIGN KEY (institution_id) REFERENCES institutions(id) ON DELETE CASCADE,
+    UNIQUE KEY uk_tester_id_institution (tester_id, institution_id)
 );
 
 -- 测试记录表

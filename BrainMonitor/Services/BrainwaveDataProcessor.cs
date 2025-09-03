@@ -219,7 +219,9 @@ namespace BrainMonitor.Services
             double maxThetaPower = thetaPower.Max();
             
             // Theta值 = [Max(Rel P(f)) - 2] * 100%
-            double thetaValue = (maxThetaPower - 2.0) * 100.0;
+            // 注意：这里的Max(Rel P(f))是百分比值，需要除以100转换为小数
+            double maxThetaPowerDecimal = maxThetaPower / 100.0;
+            double thetaValue = (maxThetaPowerDecimal - 2.0) * 100.0;
             
             // 限制在0-100%范围内
             return Math.Max(0.0, Math.Min(100.0, thetaValue));
@@ -234,7 +236,9 @@ namespace BrainMonitor.Services
             double maxAlphaPower = alphaPower.Max();
             
             // Alpha值 = 100% - [Max(Rel P(f)) + 0.3] * 100%
-            double alphaValue = 100.0 - (maxAlphaPower + 0.3) * 100.0;
+            // 注意：这里的Max(Rel P(f))是百分比值，需要除以100转换为小数
+            double maxAlphaPowerDecimal = maxAlphaPower / 100.0;
+            double alphaValue = 100.0 - (maxAlphaPowerDecimal + 0.3) * 100.0;
             
             // 限制在0-100%范围内
             return Math.Max(0.0, Math.Min(100.0, alphaValue));
@@ -249,7 +253,9 @@ namespace BrainMonitor.Services
             double maxBetaPower = betaPower.Max();
             
             // Beta值 = 100% - [Max(Rel P(f)) + 0.5] * 100%
-            double betaValue = 100.0 - (maxBetaPower + 0.5) * 100.0;
+            // 注意：这里的Max(Rel P(f))是百分比值，需要除以100转换为小数
+            double maxBetaPowerDecimal = maxBetaPower / 100.0;
+            double betaValue = 100.0 - (maxBetaPowerDecimal + 0.5) * 100.0;
             
             // 限制在0-100%范围内
             return Math.Max(0.0, Math.Min(100.0, betaValue));

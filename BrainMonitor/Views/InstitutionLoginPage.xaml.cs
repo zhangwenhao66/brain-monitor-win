@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Threading.Tasks;
 using BrainMonitor.Services;
+using System.Text.Json;
 
 namespace BrainMonitor.Views
 {
@@ -13,13 +14,26 @@ namespace BrainMonitor.Views
             InitializeComponent();
         }
 
+        private void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            // 更新标题文本
+            if (MainTabControl.SelectedItem == LoginTab)
+            {
+                TitleText.Text = "机构登录";
+            }
+            else if (MainTabControl.SelectedItem == RegisterTab)
+            {
+                TitleText.Text = "机构注册";
+            }
+        }
+
         private async void LoginButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
                 // 获取当前显示的密码
-                string password = PasswordBox.Visibility == Visibility.Visible ? PasswordBox.Password : PasswordTextBox.Text;
-                string institutionId = InstitutionIdTextBox.Text.Trim();
+                string password = LoginPasswordBox.Visibility == Visibility.Visible ? LoginPasswordBox.Password : LoginPasswordTextBox.Text;
+                string institutionId = LoginInstitutionIdTextBox.Text.Trim();
                 
                 // 验证必填字段
                 if (string.IsNullOrWhiteSpace(institutionId))
@@ -35,7 +49,7 @@ namespace BrainMonitor.Views
                 }
                 
                 // 检查隐私协议
-                if (!PrivacyCheckBox.IsChecked == true)
+                if (!LoginPrivacyCheckBox.IsChecked == true)
                 {
                     ModernMessageBoxWindow.Show("请同意隐私协议", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
                     return;
@@ -90,24 +104,118 @@ namespace BrainMonitor.Views
             }
         }
 
-        private void TogglePasswordButton_Click(object sender, RoutedEventArgs e)
+        private async void RegisterButton_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                // 验证必填字段
+                if (string.IsNullOrWhiteSpace(RegisterInstitutionNameTextBox.Text))
+                {
+                    ModernMessageBoxWindow.Show("请输入机构名称", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(RegisterInstitutionIdTextBox.Text))
+                {
+                    ModernMessageBoxWindow.Show("请输入机构ID", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(RegisterPasswordBox.Password))
+                {
+                    ModernMessageBoxWindow.Show("请输入密码", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(RegisterConfirmPasswordBox.Password))
+                {
+                    ModernMessageBoxWindow.Show("请输入确认密码", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
+                    return;
+                }
+
+                if (RegisterPasswordBox.Password != RegisterConfirmPasswordBox.Password)
+                {
+                    ModernMessageBoxWindow.Show("两次输入的密码不一致", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
+                    return;
+                }
+
+                // 禁用注册按钮，显示加载状态
+                RegisterButton.IsEnabled = false;
+                RegisterButton.Content = "注册中...";
+
+                // 准备注册数据
+                var registerRequest = new InstitutionRegisterRequest
+                {
+                    InstitutionName = RegisterInstitutionNameTextBox.Text.Trim(),
+                    InstitutionId = RegisterInstitutionIdTextBox.Text.Trim(),
+                    Password = RegisterPasswordBox.Password,
+                    ContactPerson = "", // 不再需要联系人信息
+                    ContactPhone = ""   // 不再需要联系电话信息
+                };
+
+                // 发送注册请求
+                var response = await HttpService.PostAsync<ApiResponse<InstitutionRegisterResponse>>("/auth/institution/register", registerRequest);
+                
+                if (response.Success)
+                {
+                    ModernMessageBoxWindow.Show("机构注册成功！", "注册成功", ModernMessageBoxWindow.MessageBoxType.Success);
+                    
+                    // 清空注册表单
+                    ClearRegisterForm();
+                    
+                    // 切换到登录Tab
+                    MainTabControl.SelectedItem = LoginTab;
+                    
+                    // 自动填充机构ID
+                    LoginInstitutionIdTextBox.Text = RegisterInstitutionIdTextBox.Text;
+                }
+                else
+                {
+                    ModernMessageBoxWindow.Show(response.Message ?? "注册失败", "注册失败", ModernMessageBoxWindow.MessageBoxType.Error);
+                }
+            }
+            catch (System.Net.Http.HttpRequestException ex)
+            {
+                ModernMessageBoxWindow.Show($"注册失败: {ex.Message}", "注册失败", ModernMessageBoxWindow.MessageBoxType.Error);
+            }
+            catch (Exception ex)
+            {
+                ModernMessageBoxWindow.Show($"系统错误: {ex.Message}", "注册失败", ModernMessageBoxWindow.MessageBoxType.Error);
+            }
+            finally
+            {
+                // 恢复注册按钮状态
+                RegisterButton.IsEnabled = true;
+                RegisterButton.Content = "注册";
+            }
+        }
+
+        private void ClearRegisterForm()
+        {
+            RegisterInstitutionNameTextBox.Text = "";
+            RegisterInstitutionIdTextBox.Text = "";
+            RegisterPasswordBox.Password = "";
+            RegisterConfirmPasswordBox.Password = "";
+        }
+
+        private void LoginTogglePasswordButton_Click(object sender, RoutedEventArgs e)
         {
             // 切换密码显示/隐藏
-            if (PasswordBox.Visibility == Visibility.Visible)
+            if (LoginPasswordBox.Visibility == Visibility.Visible)
             {
                 // 显示密码 - 切换到TextBox
-                PasswordTextBox.Text = PasswordBox.Password;
-                PasswordBox.Visibility = Visibility.Collapsed;
-                PasswordTextBox.Visibility = Visibility.Visible;
-                TogglePasswordIcon.Glyph = "\uE7B2"; // 显示密码图标
+                LoginPasswordTextBox.Text = LoginPasswordBox.Password;
+                LoginPasswordBox.Visibility = Visibility.Collapsed;
+                LoginPasswordTextBox.Visibility = Visibility.Visible;
+                LoginTogglePasswordIcon.Glyph = "\uE7B2"; // 显示密码图标
             }
             else
             {
                 // 隐藏密码 - 切换到PasswordBox
-                PasswordBox.Password = PasswordTextBox.Text;
-                PasswordTextBox.Visibility = Visibility.Collapsed;
-                PasswordBox.Visibility = Visibility.Visible;
-                TogglePasswordIcon.Glyph = "\uE7B3"; // 隐藏密码图标
+                LoginPasswordBox.Password = LoginPasswordTextBox.Text;
+                LoginPasswordTextBox.Visibility = Visibility.Collapsed;
+                LoginPasswordBox.Visibility = Visibility.Visible;
+                LoginTogglePasswordIcon.Glyph = "\uE7B3"; // 隐藏密码图标
             }
         }
     }

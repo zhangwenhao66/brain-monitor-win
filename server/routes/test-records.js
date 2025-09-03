@@ -64,14 +64,25 @@ router.post('/', authenticateToken, async (req, res) => {
             );
         }
 
+        // 获取测试者的数据库主键ID
+        let [currentTester] = await query(
+            'SELECT id FROM testers WHERE tester_id = ? AND institution_id = ?',
+            [testerId, institutionId]
+        );
 
-        
-        // 生成报告时创建测试记录 - 包含评分数据和脑电波结果关联
+        if (!currentTester) {
+            return res.status(404).json({
+                success: false,
+                message: '无法获取测试者信息'
+            });
+        }
+
+        // 生成报告时创建测试记录 - 使用测试者表的主键ID
         const testRecordResult = await query(
-            `INSERT INTO test_records 
-             (tester_id, medical_staff_id, institution_id, test_start_time, test_status, moca_score, mmse_score, grip_strength, open_eyes_result_id, closed_eyes_result_id, created_at) 
+            `INSERT INTO test_records
+             (tester_id, medical_staff_id, institution_id, test_start_time, test_status, moca_score, mmse_score, grip_strength, open_eyes_result_id, closed_eyes_result_id, created_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-            [testerId, currentStaff.id, institutionId, testDate, testStatus, mocaScore, mmseScore, gripStrength, openEyesResultId, closedEyesResultId]
+            [currentTester.id, currentStaff.id, institutionId, testDate, testStatus, mocaScore, mmseScore, gripStrength, openEyesResultId, closedEyesResultId]
         );
 
         const testRecordId = testRecordResult.insertId;
@@ -85,6 +96,26 @@ router.post('/', authenticateToken, async (req, res) => {
                     'SELECT theta_value, alpha_value, beta_value FROM test_results WHERE id = ?',
                     [closedEyesResultId]
                 );
+
+                // 如果Theta、Alpha、Beta值还没有计算，等待一段时间后重试
+                if (closedEyesResult && (closedEyesResult.theta_value === null || 
+                    closedEyesResult.alpha_value === null || closedEyesResult.beta_value === null)) {
+                    console.log('脑电数据还未计算完成，等待3秒后重试...');
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                    
+                    // 重新查询
+                    const [retryResult] = await query(
+                        'SELECT theta_value, alpha_value, beta_value FROM test_results WHERE id = ?',
+                        [closedEyesResultId]
+                    );
+                    
+                    if (retryResult && retryResult.theta_value !== null && 
+                        retryResult.alpha_value !== null && retryResult.beta_value !== null) {
+                        closedEyesResult.theta_value = retryResult.theta_value;
+                        closedEyesResult.alpha_value = retryResult.alpha_value;
+                        closedEyesResult.beta_value = retryResult.beta_value;
+                    }
+                }
 
                 if (closedEyesResult && closedEyesResult.theta_value !== null && 
                     closedEyesResult.alpha_value !== null && closedEyesResult.beta_value !== null) {
@@ -127,13 +158,11 @@ router.post('/', authenticateToken, async (req, res) => {
             }
         }
 
-        // 更新测试记录，保存AD风险值
-        if (adRiskValue > 0) {
-            await query(
-                'UPDATE test_records SET ad_risk_value = ? WHERE id = ?',
-                [adRiskValue, testRecordId]
-            );
-        }
+        // 更新测试记录，保存AD风险值（即使为0也要保存）
+        await query(
+            'UPDATE test_records SET ad_risk_value = ? WHERE id = ?',
+            [adRiskValue, testRecordId]
+        );
 
         // 注意：睁眼和闭眼的测试结果会在文件上传时创建，并通过brainwave_data_id关联
         // 这里需要后续的逻辑来更新test_records表中的open_eyes_result_id和closed_eyes_result_id
@@ -165,7 +194,7 @@ router.post('/', authenticateToken, async (req, res) => {
 router.post('/history', authenticateToken, async (req, res) => {
     try {
         const { testerId, page = 1, pageSize = 20 } = req.body;
-        
+
         if (!testerId) {
             return res.status(400).json({
                 success: false,
@@ -176,36 +205,36 @@ router.post('/history', authenticateToken, async (req, res) => {
         // 确保page和pageSize是数字类型
         const pageNum = Math.max(1, parseInt(page) || 1);
         const pageSizeNum = Math.max(1, parseInt(pageSize) || 20);
-        
+
         // 计算分页偏移量
         const offset = (pageNum - 1) * pageSizeNum;
-        
-        // 首先根据tester_id获取testers表的id
+
+        // 首先根据tester_id和机构ID获取testers表的id
         const [testerResult] = await query(
-            'SELECT id FROM testers WHERE tester_id = ?',
-            [testerId]
+            'SELECT id FROM testers WHERE tester_id = ? AND institution_id = ?',
+            [testerId, req.user.institution_id]
         );
-        
+
         if (!testerResult) {
             return res.status(404).json({
                 success: false,
-                message: '测试者不存在'
+                message: '测试者不存在或不属于当前机构'
             });
         }
-        
+
         const testerDbId = testerResult.id;
-        
-        // 获取总记录数
+
+        // 获取总记录数 - 添加机构ID筛选
         const [countResult] = await query(
-            'SELECT COUNT(*) as total FROM test_records WHERE tester_id = ?',
-            [testerDbId]
+            'SELECT COUNT(*) as total FROM test_records WHERE tester_id = ? AND institution_id = ?',
+            [testerDbId, req.user.institution_id]
         );
-        
+
         const totalCount = countResult.total;
-        
-        // 获取分页数据 - 使用字符串拼接避免 LIMIT/OFFSET 参数类型问题
+
+        // 获取分页数据 - 添加机构ID筛选
         const records = await query(
-            `SELECT 
+            `SELECT
                 tr.id,
                 tr.tester_id,
                 tr.medical_staff_id,
@@ -225,12 +254,12 @@ router.post('/history', authenticateToken, async (req, res) => {
              FROM test_records tr
              LEFT JOIN medical_staff ms ON tr.medical_staff_id = ms.id
              LEFT JOIN institutions i ON tr.institution_id = i.id
-             WHERE tr.tester_id = ?
+             WHERE tr.tester_id = ? AND tr.institution_id = ?
              ORDER BY tr.created_at DESC
              LIMIT ${pageSizeNum} OFFSET ${offset}`,
-            [testerDbId]
+            [testerDbId, req.user.institution_id]
         );
-        
+
         res.json({
             success: true,
             message: '获取测试历史成功',

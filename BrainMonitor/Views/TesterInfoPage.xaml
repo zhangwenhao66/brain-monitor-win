@@ -5,11 +5,22 @@
              Background="{DynamicResource ApplicationPageBackgroundThemeBrush}">
     
     <Grid Margin="15">
+        <!-- 标题区域 -->
+        <TextBlock x:Name="TitleText"
+                   Text="新增测试者"
+                   FontSize="24"
+                   FontWeight="Bold"
+                   Foreground="#0078D4"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Top"
+                   Margin="0,60,0,0" />
+        
         <!-- 主要内容区域 -->
         <Border Style="{StaticResource CardStyle}" 
-                VerticalAlignment="Center" 
+                VerticalAlignment="Top" 
                 HorizontalAlignment="Center"
-                Width="420">
+                Width="420"
+                Margin="0,80,0,0">
             <StackPanel Margin="30,30,30,20">
                 <!-- 姓名输入 -->
                 <StackPanel Margin="0,0,0,18">

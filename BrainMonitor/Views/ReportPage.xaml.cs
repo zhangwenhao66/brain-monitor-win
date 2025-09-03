@@ -276,9 +276,26 @@ namespace BrainMonitor.Views
         {
             // 简化的AD风险计算算法
             // 正常MoCA评分：26-30，正常MMSE评分：24-30
-            double mocaRisk = moca.HasValue ? Math.Max(0, (26 - moca.Value) / 26 * 50) : 25; // 默认中等风险
-            double mmseRisk = mmse.HasValue ? Math.Max(0, (24 - mmse.Value) / 24 * 50) : 25; // 默认中等风险
+            double mocaRisk = moca.HasValue ? Math.Max(0, (26 - moca.Value) / 26 * 50) : 0; // 如果没有数据，风险为0
+            double mmseRisk = mmse.HasValue ? Math.Max(0, (24 - mmse.Value) / 24 * 50) : 0; // 如果没有数据，风险为0
             
+            // 如果两个量表都没有数据，返回0
+            if (!moca.HasValue && !mmse.HasValue)
+            {
+                return 0;
+            }
+            
+            // 如果只有一个量表有数据，直接返回该量表的风险值
+            if (!moca.HasValue)
+            {
+                return mmseRisk;
+            }
+            if (!mmse.HasValue)
+            {
+                return mocaRisk;
+            }
+            
+            // 两个量表都有数据，取平均值
             return Math.Min(100, (mocaRisk + mmseRisk) / 2);
         }
 

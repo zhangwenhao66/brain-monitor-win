@@ -4,16 +4,29 @@
 ### 1. 健康检查
 GET http://localhost:3000/health
 
-### 2. 机构登录
+### 2. 机构注册
+POST http://localhost:3000/api/auth/institution/register
+Content-Type: application/json
+
+{
+  "institutionName": "测试医院",
+  "institutionId": "TEST001",
+  "password": "123456",
+  "contactPerson": "张院长",
+  "contactPhone": "13800138000",
+  "address": "北京市朝阳区测试路123号"
+}
+
+### 3. 机构登录
 POST http://localhost:3000/api/auth/institution/login
 Content-Type: application/json
 
 {
-  "institutionId": "2",
-  "password": "2"
+  "institutionId": "TEST001",
+  "password": "123456"
 }
 
-### 3. 医护人员注册
+### 4. 医护人员注册
 POST http://localhost:3000/api/auth/medical-staff/register
 Content-Type: application/json
 
@@ -28,7 +41,7 @@ Content-Type: application/json
   "institutionId": 1
 }
 
-### 4. 医护人员登录
+### 5. 医护人员登录
 POST http://localhost:3000/api/auth/medical-staff/login
 Content-Type: application/json
 
@@ -37,19 +50,19 @@ Content-Type: application/json
   "password": "123456"
 }
 
-### 5. 获取当前用户信息
+### 6. 获取当前用户信息
 GET http://localhost:3000/api/auth/me
 Authorization: Bearer {{authToken}}
 
-### 6. 获取测试者列表
+### 7. 获取测试者列表
 GET http://localhost:3000/api/testers/my-testers
 Authorization: Bearer {{authToken}}
 
-### 7. 搜索测试者
+### 8. 搜索测试者
 GET http://localhost:3000/api/testers/my-testers?search=张三
 Authorization: Bearer {{authToken}}
 
-### 8. 添加新测试者
+### 9. 添加新测试者
 POST http://localhost:3000/api/testers
 Authorization: Bearer {{authToken}}
 Content-Type: application/json
@@ -62,7 +75,7 @@ Content-Type: application/json
   "phone": "13800138010"
 }
 
-### 9. 创建测试记录
+### 10. 创建测试记录
 POST http://localhost:3000/api/test-records
 Authorization: Bearer {{authToken}}
 Content-Type: application/json
@@ -71,7 +84,7 @@ Content-Type: application/json
   "testerId": 1
 }
 
-### 10. 更新测试状态
+### 11. 更新测试状态
 PUT http://localhost:3000/api/test-records/1/status
 Authorization: Bearer {{authToken}}
 Content-Type: application/json
@@ -84,19 +97,19 @@ Content-Type: application/json
   "gripStrength": 35.5
 }
 
-### 11. 获取测试记录详情
+### 12. 获取测试记录详情
 GET http://localhost:3000/api/test-records/1
 Authorization: Bearer {{authToken}}
 
-### 12. 获取测试历史记录
+### 13. 获取测试历史记录
 GET http://localhost:3000/api/test-records/tester/1/history
 Authorization: Bearer {{authToken}}
 
-### 13. 获取测试记录报告数据（新增）
+### 14. 获取测试记录报告数据（新增）
 GET http://localhost:3000/api/test-records/1/report
 Authorization: Bearer {{authToken}}
 
-### 14. 上传脑电波数据
+### 15. 上传脑电波数据
 POST http://localhost:3000/api/brainwave-data/upload
 Authorization: Bearer {{authToken}}
 Content-Type: application/json
@@ -107,7 +120,7 @@ Content-Type: application/json
   "dataPoints": [1.2, 1.5, 1.8, 2.1, 1.9, 1.6, 1.3, 1.7, 2.0, 1.4]
 }
 
-### 15. 保存测试结果
+### 16. 保存测试结果
 POST http://localhost:3000/api/test-results
 Authorization: Bearer {{authToken}}
 Content-Type: application/json
@@ -127,11 +140,11 @@ Content-Type: application/json
   "relaxationScore": 0.70
 }
 
-### 16. 获取测试结果
+### 17. 获取测试结果
 GET http://localhost:3000/api/test-results/test-record/1
 Authorization: Bearer {{authToken}}
 
-### 17. 退出登录
+### 18. 退出登录
 POST http://localhost:3000/api/auth/logout
 Authorization: Bearer {{authToken}}
 

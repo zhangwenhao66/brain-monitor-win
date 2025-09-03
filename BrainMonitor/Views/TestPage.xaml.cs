@@ -2599,8 +2599,6 @@ namespace BrainMonitor.Views
                             if (reportResponse.IsSuccessStatusCode)
                             {
                                 var reportContent = await reportResponse.Content.ReadAsStringAsync();
-                                System.Diagnostics.Debug.WriteLine($"=== 服务器返回的完整JSON ===");
-                                System.Diagnostics.Debug.WriteLine(reportContent);
                                 var reportData = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(reportContent);
                                 
                                 if (reportData.ContainsKey("data") && reportData["data"].ValueKind == JsonValueKind.Object)
@@ -2627,28 +2625,15 @@ namespace BrainMonitor.Views
                                         serverAdRiskValue = ParseJsonValue<double?>(testRecord, "ad_risk_value");
                                         
                                         // 解析创建时间
-                                        System.Diagnostics.Debug.WriteLine($"=== 开始解析创建时间 ===");
                                         if (testRecord.TryGetProperty("created_at", out var createdAtElement))
                                         {
-                                            System.Diagnostics.Debug.WriteLine($"找到created_at字段: {createdAtElement}");
                                             string? createdAtString = createdAtElement.GetString();
-                                            System.Diagnostics.Debug.WriteLine($"created_at字符串值: {createdAtString}");
-                                            
+
                                             if (DateTime.TryParse(createdAtString, out DateTime createdAt))
                                             {
                                                 testRecordCreatedAt = createdAt;
-                                                System.Diagnostics.Debug.WriteLine($"成功解析创建时间: {createdAt}");
-                                            }
-                                            else
-                                            {
-                                                System.Diagnostics.Debug.WriteLine($"解析创建时间失败: {createdAtString}");
                                             }
                                         }
-                                        else
-                                        {
-                                            System.Diagnostics.Debug.WriteLine($"未找到created_at字段");
-                                        }
-                                        System.Diagnostics.Debug.WriteLine($"最终testRecordCreatedAt值: {testRecordCreatedAt}");
                                     }
                                     
                                     // 解析闭眼测试结果数据
@@ -2665,13 +2650,11 @@ namespace BrainMonitor.Views
                                     
                                     // 正确计算脑电最终指标：Theta值/3 + Alpha值/3 + Beta值/3
                                     double brainwaveFinalIndex = ((serverThetaValue ?? 0) + (serverAlphaValue ?? 0) + (serverBetaValue ?? 0)) / 3.0;
-                                    
-                                    System.Diagnostics.Debug.WriteLine($"=== 准备创建ReportPage ===");
-                                    System.Diagnostics.Debug.WriteLine($"传递的testRecordCreatedAt: {testRecordCreatedAt}");
+
                                     // 明确调用包含testRecordCreatedAt参数的构造函数
-                                    var reportPage = new ReportPage(CurrentTester, serverMocaScore, serverMmseScore, serverGripStrength, 
-                                        serverThetaValue ?? 0, serverAlphaValue ?? 0, serverBetaValue ?? 0, 
-                                        brainwaveFinalIndex, 
+                                    var reportPage = new ReportPage(CurrentTester, serverMocaScore, serverMmseScore, serverGripStrength,
+                                        serverThetaValue ?? 0, serverAlphaValue ?? 0, serverBetaValue ?? 0,
+                                        brainwaveFinalIndex,
                                         serverAdRiskValue ?? 0, testRecordCreatedAt, "Server");
                                     NavigationManager.NavigateTo(reportPage);
                                     

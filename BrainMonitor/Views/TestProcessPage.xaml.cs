@@ -345,8 +345,10 @@ namespace BrainMonitor.Views
                 
                 Directory.CreateDirectory(testerDir);
                 
-                // 生成文件名
-                string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                // 生成文件名 - 使用北京时间
+                TimeZoneInfo beijingTimeZone = TimeZoneInfo.FindSystemTimeZoneById("China Standard Time");
+                DateTime beijingTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, beijingTimeZone);
+                string timestamp = beijingTime.ToString("yyyyMMdd_HHmmss");
                 string fileName = $"{timestamp}_{currentTestType}.csv";
                 string filePath = Path.Combine(testerDir, fileName);
                 
@@ -436,8 +438,8 @@ namespace BrainMonitor.Views
                                         closedEyesResultId = responseData.data.testResultId;
                                     }
                                     
-                                    // 如果是闭眼测试，需要更新test_results表中的Theta、Alpha、Beta值
-                                    if (currentTestType == "闭眼" && responseData.data.testResultId > 0)
+                                    // 更新test_results表中的Theta、Alpha、Beta值（睁眼和闭眼都需要）
+                                    if (responseData.data.testResultId > 0)
                                     {
                                         await UpdateTestResultWithBrainwaveData(responseData.data.testResultId);
                                     }
@@ -677,6 +679,57 @@ namespace BrainMonitor.Views
         }
         
         /// <summary>
+        /// 处理睁眼脑电数据并计算相关指标
+        /// </summary>
+        /// <returns>脑电处理结果</returns>
+        private BrainwaveProcessResult ProcessOpenEyesBrainwaveData()
+        {
+            try
+            {
+                if (currentTestData == null || currentTestData.Count == 0)
+                {
+                    return new BrainwaveProcessResult
+                    {
+                        Success = false,
+                        ErrorMessage = "睁眼测试数据为空"
+                    };
+                }
+                
+                // 将字符串数据转换为double列表
+                var rawData = new List<double>();
+                foreach (var dataPoint in currentTestData)
+                {
+                    if (double.TryParse(dataPoint, out double value))
+                    {
+                        rawData.Add(value);
+                    }
+                }
+                
+                if (rawData.Count == 0)
+                {
+                    return new BrainwaveProcessResult
+                    {
+                        Success = false,
+                        ErrorMessage = "睁眼测试数据格式错误"
+                    };
+                }
+                
+                // 使用脑电数据处理器处理数据
+                var result = brainwaveProcessor.ProcessClosedEyesData(rawData);
+                
+                return result;
+            }
+            catch (Exception ex)
+            {
+                return new BrainwaveProcessResult
+                {
+                    Success = false,
+                    ErrorMessage = $"处理异常: {ex.Message}"
+                };
+            }
+        }
+        
+        /// <summary>
         /// 更新test_results表中的Theta、Alpha、Beta值
         /// </summary>
         /// <param name="testResultId">测试结果ID</param>
@@ -685,8 +738,18 @@ namespace BrainMonitor.Views
         {
             try
             {
-                // 处理闭眼脑电数据
-                var brainwaveResult = ProcessClosedEyesBrainwaveData();
+                // 处理脑电数据（睁眼或闭眼）
+                BrainwaveProcessResult brainwaveResult;
+                if (currentTestType == "闭眼")
+                {
+                    brainwaveResult = ProcessClosedEyesBrainwaveData();
+                }
+                else
+                {
+                    // 睁眼测试也使用相同的数据处理逻辑
+                    brainwaveResult = ProcessOpenEyesBrainwaveData();
+                }
+                
                 if (!brainwaveResult.Success)
                 {
                     return false;
