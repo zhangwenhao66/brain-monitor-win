@@ -2,20 +2,48 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BrainMirror", "BrainMonitor\BrainMonitor.csproj", "{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BrainMonitor", "BrainMonitor\BrainMonitor.csproj", "{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}"
+EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "BrainMirror", "BrainMirror\BrainMirror.vdproj", "{A91C2C4E-23C4-5A2A-5F38-27C77E6F3587}"
+EndProject
+Project("{930C7802-8A8C-48F9-8165-68863BCCD9DD}") = "BrainMirrorSetupProject", "BrainMirrorSetupProject\BrainMirrorSetupProject.wixproj", "{2FA71DFE-73EA-47CF-8FB0-B32035AA2868}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Debug|x86 = Debug|x86
 		Release|Any CPU = Release|Any CPU
+		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Debug|x86.Build.0 = Debug|Any CPU
 		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|x86.ActiveCfg = Release|Any CPU
+		{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}.Release|x86.Build.0 = Release|Any CPU
+		{A91C2C4E-23C4-5A2A-5F38-27C77E6F3587}.Debug|Any CPU.ActiveCfg = Debug
+		{A91C2C4E-23C4-5A2A-5F38-27C77E6F3587}.Debug|x86.ActiveCfg = Debug
+		{A91C2C4E-23C4-5A2A-5F38-27C77E6F3587}.Debug|x86.Build.0 = Debug
+		{A91C2C4E-23C4-5A2A-5F38-27C77E6F3587}.Release|Any CPU.ActiveCfg = Release
+		{A91C2C4E-23C4-5A2A-5F38-27C77E6F3587}.Release|Any CPU.Build.0 = Release
+		{A91C2C4E-23C4-5A2A-5F38-27C77E6F3587}.Release|x86.ActiveCfg = Release
+		{A91C2C4E-23C4-5A2A-5F38-27C77E6F3587}.Release|x86.Build.0 = Release
+		{2FA71DFE-73EA-47CF-8FB0-B32035AA2868}.Debug|Any CPU.ActiveCfg = Debug|x86
+		{2FA71DFE-73EA-47CF-8FB0-B32035AA2868}.Debug|Any CPU.Build.0 = Debug|x86
+		{2FA71DFE-73EA-47CF-8FB0-B32035AA2868}.Debug|x86.ActiveCfg = Debug|x86
+		{2FA71DFE-73EA-47CF-8FB0-B32035AA2868}.Debug|x86.Build.0 = Debug|x86
+		{2FA71DFE-73EA-47CF-8FB0-B32035AA2868}.Release|Any CPU.ActiveCfg = Release|x86
+		{2FA71DFE-73EA-47CF-8FB0-B32035AA2868}.Release|Any CPU.Build.0 = Release|x86
+		{2FA71DFE-73EA-47CF-8FB0-B32035AA2868}.Release|x86.ActiveCfg = Release|x86
+		{2FA71DFE-73EA-47CF-8FB0-B32035AA2868}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
-EndGlobal 
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A33CBDBB-4172-41FF-BEED-F4C9D9126E23}
+	EndGlobalSection
+EndGlobal

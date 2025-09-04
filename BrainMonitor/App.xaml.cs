@@ -6,6 +6,11 @@ namespace BrainMirror
 {
     public partial class App : Application
     {
+        /// <summary>
+        /// 应用程序版本号
+        /// </summary>
+        public static string Version => "1.0";
+
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
