@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>脑镜BrainMirror - 脑电波监测与健康风险评估系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 0.5em;
+            text-align: center;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 0.3em;
+        }
+
+        h2 {
+            color: #34495e;
+            font-size: 2em;
+            margin: 2em 0 1em 0;
+            padding-bottom: 0.3em;
+            border-bottom: 2px solid #3498db;
+        }
+
+        h3 {
+            color: #2c3e50;
+            font-size: 1.5em;
+            margin: 1.5em 0 1em 0;
+        }
+
+        h4 {
+            color: #34495e;
+            font-size: 1.2em;
+            margin: 1.2em 0 0.8em 0;
+        }
+
+        p {
+            margin-bottom: 1em;
+            font-size: 1.1em;
+            line-height: 1.7;
+        }
+
+        ul, ol {
+            margin: 1em 0;
+            padding-left: 2em;
+        }
+
+        li {
+            margin-bottom: 0.5em;
+            font-size: 1.05em;
+        }
+
+        strong {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        code {
+            background: #f8f9fa;
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9em;
+            color: #e74c3c;
+        }
+
+        pre {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 1.5em;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 1.5em 0;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+            color: inherit;
+        }
+
+        blockquote {
+            border-left: 4px solid #3498db;
+            padding-left: 1.5em;
+            margin: 1.5em 0;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+
+        hr {
+            border: none;
+            height: 2px;
+            background: linear-gradient(90deg, #3498db, #2980b9);
+            margin: 2em 0;
+        }
+
+        .highlight {
+            background: #ecf0f1;
+            padding: 1.5em;
+            border-radius: 5px;
+            margin: 1.5em 0;
+            border-left: 4px solid #3498db;
+        }
+
+        .flow-diagram {
+            background: #f8f9fa;
+            padding: 1.5em;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            margin: 1.5em 0;
+            border: 1px solid #dee2e6;
+        }
+
+        .tech-stack {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5em;
+            margin: 2em 0;
+        }
+
+        .tech-item {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 1.5em;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .tech-item h4 {
+            color: white;
+            margin-bottom: 0.5em;
+        }
+
+        .api-endpoint {
+            background: #e8f4f8;
+            padding: 0.5em 1em;
+            border-radius: 4px;
+            font-family: monospace;
+            margin: 0.5em 0;
+            border: 1px solid #bee5eb;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 3em;
+            padding: 2em 0;
+            color: #7f8c8d;
+            border-top: 1px solid #ecf0f1;
+        }
+
+        .footer strong {
+            color: #3498db;
+            font-size: 1.2em;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                padding: 15px;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            h2 {
+                font-size: 1.6em;
+            }
+
+            .tech-stack {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧠 脑镜BrainMirror - 脑电波监测与健康风险评估系统</h1>
+
+        <p>这是一个完整的脑电波检测与健康风险评估系统，采用前后端分离架构，为医疗机构提供专业的认知健康评估服务。</p>
+
+        <h2>📋 项目概述</h2>
+
+        <p>脑镜BrainMirror是一款基于脑电波分析技术的医疗健康软件，集成了MOCA和MMSE认知评估量表，能够全面分析用户的认知功能状态，为早期发现阿尔茨海默病（AD）等认知障碍提供科学依据。</p>
+
+        <p>系统采用现代化的技术栈：</p>
+        <ul>
+            <li><strong>前端</strong>: .NET 8.0 + WPF 桌面应用</li>
+            <li><strong>后端</strong>: Node.js + Express.js RESTful API</li>
+            <li><strong>数据库</strong>: MySQL 关系型数据库</li>
+            <li><strong>通信</strong>: HTTP/HTTPS + JWT 身份验证</li>
+        </ul>
+
+        <h2>🏗️ 系统架构</h2>
+
+        <div class="tech-stack">
+            <div class="tech-item">
+                <h4>前端架构（WPF桌面应用）</h4>
+                <ul>
+                    <li><strong>技术栈</strong>: .NET 8.0, WPF, C#, ModernWpfUI</li>
+                    <li><strong>主要功能</strong>: 用户界面、数据展示、本地数据处理</li>
+                    <li><strong>通信方式</strong>: HTTP客户端调用后端API</li>
+                    <li><strong>部署方式</strong>: Windows桌面应用程序</li>
+                </ul>
+            </div>
+
+            <div class="tech-item">
+                <h4>后端架构（Node.js服务器）</h4>
+                <ul>
+                    <li><strong>技术栈</strong>: Node.js, Express.js, MySQL2, JWT, bcryptjs</li>
+                    <li><strong>主要功能</strong>: API服务、业务逻辑处理、数据持久化</li>
+                    <li><strong>安全特性</strong>: JWT身份验证、密码加密、CORS防护、请求频率限制</li>
+                    <li><strong>部署方式</strong>: 独立服务器，可使用PM2进程管理</li>
+                </ul>
+            </div>
+
+            <div class="tech-item">
+                <h4>数据库架构（MySQL）</h4>
+                <ul>
+                    <li><strong>数据库名</strong>: brain_mirror</li>
+                    <li><strong>表结构</strong>: 机构表、医护人员表、测试者表、测试记录表、测试结果表</li>
+                    <li><strong>特性</strong>: 支持多机构多租户、数据关联完整性、外键约束</li>
+                </ul>
+            </div>
+        </div>
+
+        <h2>🔧 核心功能模块</h2>
+
+        <h3>1. 机构管理模块</h3>
+        <ul>
+            <li><strong>机构注册</strong>: 新机构注册，设置机构基本信息</li>
+            <li><strong>机构登录</strong>: 机构ID和密码验证登录</li>
+            <li><strong>机构信息</strong>: 联系人、联系电话、机构地址管理</li>
+        </ul>
+
+        <h3>2. 医护人员管理模块</h3>
+        <ul>
+            <li><strong>医护人员注册</strong>: 工号、姓名、账号密码等信息录入</li>
+            <li><strong>医护人员登录</strong>: 多机构环境下账号唯一性验证</li>
+            <li><strong>人员信息管理</strong>: 科室、职位、联系方式管理</li>
+            <li><strong>权限控制</strong>: 基于机构的访问权限控制</li>
+        </ul>
+
+        <h3>3. 测试者管理模块</h3>
+        <ul>
+            <li><strong>测试者信息录入</strong>: ID、姓名、年龄、性别、联系电话</li>
+            <li><strong>测试者列表</strong>: 分页查询、搜索功能</li>
+            <li><strong>信息验证</strong>: 数据完整性校验</li>
+            <li><strong>隐私协议</strong>: 用户隐私协议确认</li>
+        </ul>
+
+        <h3>4. 脑电波测试模块</h3>
+        <ul>
+            <li><strong>设备连接</strong>: 串口通信，脑电波设备连接管理</li>
+            <li><strong>实时监测</strong>: Theta、Alpha、Beta波段数据实时显示</li>
+            <li><strong>测试流程</strong>: 睁眼/闭眼状态分别测试</li>
+            <li><strong>量表评估</strong>: MOCA和MMSE评分录入</li>
+        </ul>
+
+        <h3>5. 健康报告模块</h3>
+        <ul>
+            <li><strong>AD风险评估</strong>: 基于脑电波数据计算AD风险值</li>
+            <li><strong>大脑年龄计算</strong>: 相对实际年龄的大脑年龄评估</li>
+            <li><strong>结果可视化</strong>: 脑电波图表展示</li>
+            <li><strong>健康建议</strong>: 个性化健康指导建议</li>
+        </ul>
+
+        <h3>6. 测试历史管理模块</h3>
+        <ul>
+            <li><strong>历史记录查询</strong>: 分页查看测试历史</li>
+            <li><strong>数据筛选</strong>: 按测试者、时间等条件筛选</li>
+            <li><strong>报告导出</strong>: 测试结果数据导出功能</li>
+        </ul>
+
+        <h2>📁 项目结构详解</h2>
+
+        <pre><code>brain-monitor-win/
+├── BrainMonitor/                          # WPF前端项目
+│   ├── BrainMonitor.csproj               # 项目配置文件
+│   ├── App.xaml/App.xaml.cs              # 应用程序入口
+│   ├── Assets/                           # 静态资源文件
+│   │   ├── icon.ico/png                  # 应用图标
+│   │   └── audio/                        # 音频资源
+│   ├── Views/                            # UI界面层
+│   │   ├── InstitutionLoginWindow.xaml   # 机构登录界面
+│   │   ├── MedicalStaffWindow.xaml       # 医护人员操作界面
+│   │   ├── TesterInfoWindow.xaml         # 测试者信息录入
+│   │   ├── TestWindow.xaml               # 脑电波测试界面
+│   │   ├── ReportWindow.xaml             # 健康报告界面
+│   │   ├── TestHistoryWindow.xaml        # 测试历史界面
+│   │   └── ModernMessageBoxWindow.xaml   # 自定义消息框
+│   ├── Services/                         # 业务服务层
+│   │   ├── HttpService.cs                # HTTP客户端服务
+│   │   ├── BrainwaveDataProcessor.cs     # 脑电波数据处理
+│   │   ├── TesterService.cs              # 测试者服务
+│   │   └── TestHistoryService.cs         # 测试历史服务
+│   ├── Models/                           # 数据模型
+│   │   └── TestDataModels.cs             # 测试数据模型
+│   ├── Converters/                       # 数据转换器
+│   │   └── DateTimeConverter.cs          # 日期时间转换
+│   ├── SDK/                              # 第三方SDK集成
+│   │   └── BrainMonitorSDK.cs            # 脑电波设备SDK
+│   ├── lib/                              # 本地库文件
+│   └── demo/                             # SDK示例代码
+├── server/                               # Node.js后端服务器
+│   ├── package.json                      # 项目依赖配置
+│   ├── server.js                         # 服务器入口文件
+│   ├── ecosystem.config.js               # PM2配置文件
+│   ├── config/                           # 配置文件
+│   │   ├── database.js                   # 数据库配置
+│   │   └── jwt.js                        # JWT配置
+│   ├── middleware/                       # 中间件
+│   │   └── auth.js                       # 身份验证中间件
+│   ├── routes/                           # API路由
+│   │   ├── auth.js                       # 认证相关API
+│   │   ├── testers.js                    # 测试者管理API
+│   │   ├── test-records.js               # 测试记录API
+│   │   ├── brainwave-data.js             # 脑电波数据API
+│   │   └── test-results.js               # 测试结果API
+│   ├── database/                         # 数据库相关
+│   │   └── schema.sql                    # 数据库表结构
+│   ├── scripts/                          # 脚本文件
+│   │   └── init-db.js                    # 数据库初始化
+│   ├── test-api.http                     # API测试文件
+│   └── README.md                         # 服务器说明文档
+├── BrainMonitor.sln                      # Visual Studio解决方案
+└── README.md                             # 项目总README</code></pre>
+
+        <h2>🔄 前后端协作流程</h2>
+
+        <h3>1. 用户认证流程</h3>
+        <div class="flow-diagram">前端(WPF) → 后端API → 数据库
+    ↓           ↓         ↓
+机构登录 → /api/auth/institution/login → institutions表
+医护登录 → /api/auth/medical-staff/login → medical_staff表</div>
+
+        <h3>2. 测试流程</h3>
+        <div class="flow-diagram">1. 测试者录入 → 前端表单 → POST /api/testers → testers表
+2. 开始测试 → 设备连接 → 实时数据处理 → 本地存储
+3. 测试完成 → 上传数据 → POST /api/test-records → test_records表
+4. 生成报告 → 计算结果 → POST /api/test-results → test_results表</div>
+
+        <h3>3. 数据流转</h3>
+        <div class="flow-diagram">脑电波设备 → SDK → WPF应用 → HttpService → REST API → MySQL数据库
+         ↑           ↑         ↑           ↑           ↑
+    原始数据 → 数据处理 → UI显示 → 网络传输 → 业务逻辑 → 持久化存储</div>
+
+        <h2>🚀 快速开始</h2>
+
+        <h3>前端部署（Windows）</h3>
+        <pre><code># 1. 安装.NET 8.0 SDK
+# 下载地址: https://dotnet.microsoft.com/download/dotnet/8.0
+
+# 2. 克隆项目
+git clone https://github.com/your-repo/brain-monitor-win.git
+cd brain-monitor-win
+
+# 3. 打开解决方案
+start BrainMonitor.sln
+
+# 4. 使用Visual Studio 2022编译运行
+# 或使用命令行:
+dotnet build
+dotnet run --project BrainMonitor</code></pre>
+
+        <h3>后端部署</h3>
+        <pre><code># 1. 安装Node.js (版本 &gt;= 16.0.0)
+# 下载地址: https://nodejs.org/
+
+# 2. 进入服务器目录
+cd server
+
+# 3. 安装依赖
+npm install
+
+# 4. 配置环境变量
+cp .env.example .env
+# 编辑.env文件，配置数据库连接等信息
+
+# 5. 初始化数据库
+npm run init-db
+
+# 6. 启动服务器
+npm start
+# 或开发模式:
+npm run dev
+# 或生产模式:
+npm run pm2:start</code></pre>
+
+        <h3>数据库配置</h3>
+        <pre><code>-- 创建数据库
+CREATE DATABASE brain_mirror CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- 运行表结构脚本
+source server/database/schema.sql;</code></pre>
+
+        <h2>⚙️ 环境配置</h2>
+
+        <h3>后端环境变量 (.env)</h3>
+        <pre><code># 服务器配置
+NODE_ENV=development
+PORT=3000
+
+# 数据库配置
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=your_password
+DB_NAME=brain_mirror
+
+# JWT配置
+JWT_SECRET=your_jwt_secret_key
+JWT_EXPIRES_IN=24h
+
+# CORS配置
+CORS_ORIGIN=http://localhost:8080</code></pre>
+
+        <h3>前端配置</h3>
+        <pre><code>// HttpService.cs 中的BaseUrl配置
+private const string BaseUrl = "https://bm.miyinbot.com/api";
+// 开发环境可改为:
+// private const string BaseUrl = "http://localhost:3000/api";</code></pre>
+
+        <h2>🔒 安全特性</h2>
+
+        <h3>身份验证安全</h3>
+        <ul>
+            <li>JWT Token身份验证</li>
+            <li>密码bcrypt加密存储</li>
+            <li>多机构隔离访问控制</li>
+            <li>Token过期自动失效</li>
+        </ul>
+
+        <h3>数据传输安全</h3>
+        <ul>
+            <li>HTTPS加密传输</li>
+            <li>请求频率限制(Rate Limiting)</li>
+            <li>CORS跨域防护</li>
+            <li>输入数据验证和清理</li>
+        </ul>
+
+        <h3>数据存储安全</h3>
+        <ul>
+            <li>敏感数据加密存储</li>
+            <li>数据库访问权限控制</li>
+            <li>SQL注入防护</li>
+            <li>数据备份和恢复机制</li>
+        </ul>
+
+        <h2>📊 API接口文档</h2>
+
+        <h3>认证接口</h3>
+        <ul>
+            <li><span class="api-endpoint">POST /api/auth/institution/login</span> - 机构登录</li>
+            <li><span class="api-endpoint">POST /api/auth/medical-staff/login</span> - 医护人员登录</li>
+            <li><span class="api-endpoint">POST /api/auth/institution/register</span> - 机构注册</li>
+            <li><span class="api-endpoint">POST /api/auth/medical-staff/register</span> - 医护人员注册</li>
+        </ul>
+
+        <h3>测试者管理接口</h3>
+        <ul>
+            <li><span class="api-endpoint">GET /api/testers</span> - 获取测试者列表</li>
+            <li><span class="api-endpoint">POST /api/testers</span> - 创建测试者</li>
+            <li><span class="api-endpoint">GET /api/testers/:id</span> - 获取测试者详情</li>
+            <li><span class="api-endpoint">PUT /api/testers/:id</span> - 更新测试者信息</li>
+        </ul>
+
+        <h3>测试记录接口</h3>
+        <ul>
+            <li><span class="api-endpoint">GET /api/test-records</span> - 获取测试记录列表</li>
+            <li><span class="api-endpoint">POST /api/test-records</span> - 创建测试记录</li>
+            <li><span class="api-endpoint">GET /api/test-records/:id</span> - 获取测试记录详情</li>
+            <li><span class="api-endpoint">PUT /api/test-records/:id</span> - 更新测试记录</li>
+        </ul>
+
+        <h3>脑电波数据接口</h3>
+        <ul>
+            <li><span class="api-endpoint">POST /api/brainwave-data/upload</span> - 上传脑电波数据</li>
+            <li><span class="api-endpoint">GET /api/brainwave-data/:testRecordId</span> - 获取脑电波数据</li>
+        </ul>
+
+        <h2>🧪 测试与调试</h2>
+
+        <h3>API测试</h3>
+        <pre><code># 使用内置测试脚本
+cd server
+npm run test:login
+
+# 或使用test-api.http文件测试</code></pre>
+
+        <h3>前端调试</h3>
+        <ul>
+            <li>使用Visual Studio调试器</li>
+            <li>查看输出窗口日志</li>
+            <li>使用Fiddler抓包分析网络请求</li>
+        </ul>
+
+        <h3>数据库调试</h3>
+        <pre><code>-- 查看表结构
+DESCRIBE institutions;
+DESCRIBE medical_staff;
+DESCRIBE testers;
+
+-- 查看数据
+SELECT * FROM institutions LIMIT 10;
+SELECT * FROM test_records ORDER BY created_at DESC LIMIT 10;</code></pre>
+
+        <h2>📈 性能优化</h2>
+
+        <h3>前端优化</h3>
+        <ul>
+            <li>WPF UI虚拟化处理大量数据</li>
+            <li>异步数据加载避免界面冻结</li>
+            <li>内存管理优化大文件处理</li>
+            <li>响应式布局适配不同分辨率</li>
+        </ul>
+
+        <h3>后端优化</h3>
+        <ul>
+            <li>数据库连接池管理</li>
+            <li>API请求缓存机制</li>
+            <li>文件上传分块处理</li>
+            <li>PM2集群模式部署</li>
+        </ul>
+
+        <h3>数据库优化</h3>
+        <ul>
+            <li>索引优化查询性能</li>
+            <li>分页查询避免大数据量</li>
+            <li>定期清理历史数据</li>
+            <li>读写分离架构支持</li>
+        </ul>
+
+        <h2>🔧 维护与扩展</h2>
+
+        <h3>定期维护任务</h3>
+        <ul>
+            <li>数据库备份</li>
+            <li>日志文件清理</li>
+            <li>依赖包更新</li>
+            <li>安全补丁应用</li>
+        </ul>
+
+        <h3>扩展开发</h3>
+        <ul>
+            <li>新设备SDK集成</li>
+            <li>报告模板定制</li>
+            <li>多语言界面支持</li>
+            <li>数据导出功能增强</li>
+        </ul>
+
+        <h2>📞 技术支持</h2>
+
+        <p>如需技术支持或遇到问题，请联系开发团队：</p>
+        <ul>
+            <li>邮箱: support@brainmirror.com</li>
+            <li>文档: [在线文档链接]</li>
+            <li>社区: [社区论坛链接]</li>
+        </ul>
+
+        <h2>📄 开源协议</h2>
+
+        <p>本项目采用 MIT 协议开源，详见 LICENSE 文件。</p>
+
+        <hr>
+
+        <div class="footer">
+            <p><strong>🧠 脑镜BrainMirror</strong> - 为医疗健康事业贡献力量，让科技守护认知健康！</p>
+        </div>
+    </div>
+</body>
+</html>
