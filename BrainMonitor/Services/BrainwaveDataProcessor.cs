@@ -220,7 +220,8 @@ namespace BrainMirror.Services
             
             // Theta值 = [Max(Rel P(f)) - 2] * 100%
             // 注意：这里的Max(Rel P(f))是百分比值，需要除以100转换为小数
-            double maxThetaPowerDecimal = maxThetaPower / 100.0;
+            // double maxThetaPowerDecimal = maxThetaPower / 100.0;
+            double maxThetaPowerDecimal = maxThetaPower;
             double thetaValue = (maxThetaPowerDecimal - 2.0) * 100.0;
             
             // 限制在0-100%范围内
@@ -237,7 +238,8 @@ namespace BrainMirror.Services
             
             // Alpha值 = 100% - [Max(Rel P(f)) + 0.3] * 100%
             // 注意：这里的Max(Rel P(f))是百分比值，需要除以100转换为小数
-            double maxAlphaPowerDecimal = maxAlphaPower / 100.0;
+            // double maxAlphaPowerDecimal = maxAlphaPower / 100.0;
+            double maxAlphaPowerDecimal = maxAlphaPower;
             double alphaValue = 100.0 - (maxAlphaPowerDecimal + 0.3) * 100.0;
             
             // 限制在0-100%范围内
@@ -254,7 +256,8 @@ namespace BrainMirror.Services
             
             // Beta值 = 100% - [Max(Rel P(f)) + 0.5] * 100%
             // 注意：这里的Max(Rel P(f))是百分比值，需要除以100转换为小数
-            double maxBetaPowerDecimal = maxBetaPower / 100.0;
+            // double maxBetaPowerDecimal = maxBetaPower / 100.0;
+            double maxBetaPowerDecimal = maxBetaPower;
             double betaValue = 100.0 - (maxBetaPowerDecimal + 0.5) * 100.0;
             
             // 限制在0-100%范围内
