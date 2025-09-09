@@ -209,14 +209,6 @@ namespace BrainMirror.Views
             // 设置进度条宽度
             RiskProgressBar.Width = (riskPercentage / 100) * 200; // 假设最大宽度为200
 
-            // 计算大脑年龄 - 直接使用测试者的实际年龄
-            int actualAge = int.TryParse(currentTester.Age, out int parsedAge) ? parsedAge : 30;
-            int brainAge = actualAge; // 直接使用实际年龄
-            BrainAgeText.Text = $"{brainAge}岁";
-            
-            // 年龄差异为0，显示与实际年龄相符
-            BrainAgeComparisonText.Text = "与实际年龄相符";
-            BrainAgeComparisonText.Foreground = System.Windows.Media.Brushes.Gray;
             
 
             
@@ -249,8 +241,6 @@ namespace BrainMirror.Views
                 RiskProgressBar.Width = (adRiskIndex / 100) * 200; // 假设最大宽度为200
             }
             
-            // 由于大脑年龄直接使用实际年龄，所以总是显示"与实际年龄相符"
-            // 这部分逻辑已经在上面处理了，这里不需要重复设置
 
             // 生成报告分析文本
             GenerateReportAnalysis();
@@ -274,29 +264,82 @@ namespace BrainMirror.Views
 
         private double CalculateADRisk(double? moca, double? mmse)
         {
-            // 简化的AD风险计算算法
-            // 正常MoCA评分：26-30，正常MMSE评分：24-30
-            double mocaRisk = moca.HasValue ? Math.Max(0, (26 - moca.Value) / 26 * 50) : 0; // 如果没有数据，风险为0
-            double mmseRisk = mmse.HasValue ? Math.Max(0, (24 - mmse.Value) / 24 * 50) : 0; // 如果没有数据，风险为0
+            // 计算脑电最终指标 = Theta值/3 + Alpha值/3 + Beta值/3
+            double brainwaveFinalIndex = (brainwaveThetaValue / 3.0) + (brainwaveAlphaValue / 3.0) + (brainwaveBetaValue / 3.0);
             
-            // 如果两个量表都没有数据，返回0
-            if (!moca.HasValue && !mmse.HasValue)
+            // 计算量表分数 = 1 - [(MMSE分数/30 * 100% + MoCA分数/30 * 100%) / 2]
+            double scaleScore = 0.0;
+            int scaleCount = 0;
+            
+            if (mmse.HasValue)
             {
-                return 0;
+                // MMSE分数/30 * 100%
+                double mmsePercentage = (mmse.Value / 30.0) * 100.0;
+                scaleScore += mmsePercentage;
+                scaleCount++;
             }
             
-            // 如果只有一个量表有数据，直接返回该量表的风险值
-            if (!moca.HasValue)
+            if (moca.HasValue)
             {
-                return mmseRisk;
-            }
-            if (!mmse.HasValue)
-            {
-                return mocaRisk;
+                // MoCA分数/30 * 100%
+                double mocaPercentage = (moca.Value / 30.0) * 100.0;
+                scaleScore += mocaPercentage;
+                scaleCount++;
             }
             
-            // 两个量表都有数据，取平均值
-            return Math.Min(100, (mocaRisk + mmseRisk) / 2);
+            // 计算平均量表分数
+            double averageScaleScore = scaleCount > 0 ? scaleScore / scaleCount : 0.0;
+            
+            // 量表分数 = 1 - 平均量表分数（越接近0%越正常，越接近100%风险越高）
+            double finalScaleScore = 100.0 - averageScaleScore;
+            
+            // 计算握力分数
+            double gripStrengthScore = 0.0;
+            bool hasGripStrength = false;
+            
+            if (gripStrength.HasValue && currentTester != null)
+            {
+                try
+                {
+                    // 解析年龄
+                    if (int.TryParse(currentTester.Age, out int age))
+                    {
+                        gripStrengthScore = Services.GripStrengthService.CalculateGripStrengthScore(
+                            gripStrength.Value, currentTester.Gender, age);
+                        hasGripStrength = true;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Diagnostics.Debug.WriteLine($"计算握力分数时发生异常: {ex.Message}");
+                }
+            }
+            
+            // 计算AD风险指数
+            double adRiskIndex;
+            
+            if (scaleCount > 0 && hasGripStrength)
+            {
+                // 如果有脑电、量表和握力数据：AD风险指数 = (脑电最终指标/3 + 量表分数/3 + 握力分数/3)
+                adRiskIndex = (brainwaveFinalIndex / 3.0) + (finalScaleScore / 3.0) + (gripStrengthScore / 3.0);
+            }
+            else if (scaleCount > 0)
+            {
+                // 如果只有脑电和量表数据：AD风险指数 = (脑电最终指标/2 + 量表分数/2)
+                adRiskIndex = (brainwaveFinalIndex / 2.0) + (finalScaleScore / 2.0);
+            }
+            else if (hasGripStrength)
+            {
+                // 如果只有脑电和握力数据：AD风险指数 = (脑电最终指标/2 + 握力分数/2)
+                adRiskIndex = (brainwaveFinalIndex / 2.0) + (gripStrengthScore / 2.0);
+            }
+            else
+            {
+                // 如果只有脑电数据：AD风险指数 = 脑电最终指标
+                adRiskIndex = brainwaveFinalIndex;
+            }
+            
+            return adRiskIndex;
         }
 
 

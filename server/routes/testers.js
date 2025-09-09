@@ -4,7 +4,7 @@ const { authenticateToken, authenticateTesterAccess } = require('../middleware/a
 
 const router = express.Router();
 
-// 获取当前医护人员的测试者列表
+// 获取当前工作人员的测试者列表
 router.get('/my-testers', authenticateToken, async (req, res) => {
     try {
         const { search } = req.query;
@@ -29,9 +29,21 @@ router.get('/my-testers', authenticateToken, async (req, res) => {
 
         const testers = await query(sql, params);
 
+        // 转换性别值：英文转中文（用于返回给前端）
+        const genderMapReverse = {
+            'Male': '男',
+            'Female': '女',
+            'Other': '其他'
+        };
+        
+        const testersWithChineseGender = testers.map(tester => ({
+            ...tester,
+            gender: genderMapReverse[tester.gender] || tester.gender
+        }));
+
         res.json({
             success: true,
-            data: testers
+            data: testersWithChineseGender
         });
 
     } catch (error) {
@@ -58,7 +70,21 @@ router.post('/', authenticateToken, async (req, res) => {
             });
         }
 
-        // 检查测试者ID是否在当前医护人员下已存在
+        // 转换性别值：中文转英文
+        let normalizedGender = null;
+        if (gender) {
+            const genderMap = {
+                '男': 'Male',
+                '女': 'Female',
+                '其他': 'Other',
+                'Male': 'Male',
+                'Female': 'Female',
+                'Other': 'Other'
+            };
+            normalizedGender = genderMap[gender] || null;
+        }
+
+        // 检查测试者ID是否在当前工作人员下已存在
         const [existingTester] = await query(
             'SELECT id, medical_staff_id, institution_id FROM testers WHERE tester_id = ? AND medical_staff_id = ?',
             [testerId, currentMedicalStaffId]
@@ -67,17 +93,16 @@ router.post('/', authenticateToken, async (req, res) => {
         if (existingTester) {
             return res.status(400).json({
                 success: false,
-                message: `测试者ID ${testerId} 在当前医护人员下已存在`
+                message: `测试者ID ${testerId} 在当前工作人员下已存在`
             });
         }
 
         // 插入新测试者
-
         const result = await query(
             `INSERT INTO testers 
              (tester_id, name, age, gender, phone, medical_staff_id, institution_id) 
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
-            [testerId, name, age, gender, phone, currentMedicalStaffId, currentInstitutionId]
+            [testerId, name, age, normalizedGender, phone, currentMedicalStaffId, currentInstitutionId]
         );
 
         // 获取新插入的测试者信息
@@ -85,6 +110,14 @@ router.post('/', authenticateToken, async (req, res) => {
             'SELECT id, tester_id, name, age, gender, phone, medical_staff_id, institution_id, created_at FROM testers WHERE id = ?',
             [result.insertId]
         );
+
+        // 转换性别值：英文转中文（用于返回给前端）
+        const genderMapReverse = {
+            'Male': '男',
+            'Female': '女',
+            'Other': '其他'
+        };
+        const displayGender = genderMapReverse[newTester.gender] || newTester.gender;
 
         res.status(201).json({
             success: true,
@@ -94,7 +127,7 @@ router.post('/', authenticateToken, async (req, res) => {
                 testerId: newTester.tester_id,
                 name: newTester.name,
                 age: newTester.age,
-                gender: newTester.gender,
+                gender: displayGender,
                 phone: newTester.phone,
                 medicalStaffId: newTester.medical_staff_id,
                 institutionId: newTester.institution_id,
@@ -161,10 +194,22 @@ router.post('/list', authenticateToken, async (req, res) => {
             [medicalStaffIdInt, institutionIdInt]
         );
 
+        // 转换性别值：英文转中文（用于返回给前端）
+        const genderMapReverse = {
+            'Male': '男',
+            'Female': '女',
+            'Other': '其他'
+        };
+        
+        const testersWithChineseGender = testers.map(tester => ({
+            ...tester,
+            gender: genderMapReverse[tester.gender] || tester.gender
+        }));
+
         res.json({
             success: true,
             data: {
-                testers,
+                testers: testersWithChineseGender,
                 totalCount: total,
                 page: pageInt,
                 pageSize: pageSizeInt,

@@ -1,6 +1,7 @@
 const express = require('express');
 const { query, transaction } = require('../config/database');
 const { authenticateToken } = require('../middleware/auth');
+const { calculateGripStrengthScore } = require('../services/gripStrengthService');
 
 const router = express.Router();
 
@@ -26,26 +27,34 @@ router.post('/', authenticateToken, async (req, res) => {
         if (!testerId || !testerName || !medicalStaffId || !medicalStaffName || !institutionId) {
             return res.status(400).json({
                 success: false,
-                message: '测试者ID、姓名、医护人员ID、姓名和机构ID为必填字段'
+                message: '测试者ID、姓名、工作人员ID、姓名和机构ID为必填字段'
             });
         }
+        
+        // 将中文testStatus转换为数据库ENUM值
+        const testStatusMap = {
+            '进行中': 'In Progress',
+            '已完成': 'Completed',
+            '已取消': 'Cancelled'
+        };
+        const dbTestStatus = testStatusMap[testStatus] || 'In Progress';
 
-        // 检查医护人员是否存在 - 使用数据库ID查询
+        // 检查工作人员是否存在 - 使用数据库ID查询
         let [existingStaff] = await query(
             'SELECT id FROM medical_staff WHERE id = ? AND institution_id = ?',
             [medicalStaffId, institutionId]
         );
 
         if (!existingStaff) {
-            console.log('医护人员不存在，创建新记录');
-            // 如果医护人员不存在，创建新记录
+            console.log('工作人员不存在，创建新记录');
+            // 如果工作人员不存在，创建新记录
             await query(
                 'INSERT INTO medical_staff (staff_id, name, account, password, institution_id, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
                 [medicalStaffId.toString(), medicalStaffName, `staff_${medicalStaffId}`, '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', institutionId]
             );
         }
 
-        // 获取医护人员的实际ID（可能是新插入的，也可能是已存在的）
+        // 获取工作人员的实际ID（可能是新插入的，也可能是已存在的）
         let [currentStaff] = await query(
             'SELECT id FROM medical_staff WHERE id = ? AND institution_id = ?',
             [medicalStaffId, institutionId]
@@ -64,9 +73,9 @@ router.post('/', authenticateToken, async (req, res) => {
             );
         }
 
-        // 获取测试者的数据库主键ID
+        // 获取测试者的数据库主键ID和基本信息
         let [currentTester] = await query(
-            'SELECT id FROM testers WHERE tester_id = ? AND institution_id = ?',
+            'SELECT id, age, gender FROM testers WHERE tester_id = ? AND institution_id = ?',
             [testerId, institutionId]
         );
 
@@ -82,7 +91,7 @@ router.post('/', authenticateToken, async (req, res) => {
             `INSERT INTO test_records
              (tester_id, medical_staff_id, institution_id, test_start_time, test_status, moca_score, mmse_score, grip_strength, open_eyes_result_id, closed_eyes_result_id, created_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-            [currentTester.id, currentStaff.id, institutionId, testDate, testStatus, mocaScore, mmseScore, gripStrength, openEyesResultId, closedEyesResultId]
+            [currentTester.id, currentStaff.id, institutionId, testDate, dbTestStatus, mocaScore, mmseScore, gripStrength, openEyesResultId, closedEyesResultId]
         );
 
         const testRecordId = testRecordResult.insertId;
@@ -144,10 +153,38 @@ router.post('/', authenticateToken, async (req, res) => {
                     // 量表分数 = 1 - 平均量表分数（越接近0%越正常，越接近100%风险越高）
                     const finalScaleScore = 100.0 - averageScaleScore;
                     
+                    // 计算握力分数
+                    let gripStrengthScore = 0;
+                    let hasGripStrength = false;
+                    
+                    if (gripStrength !== null && gripStrength !== undefined && currentTester.gender && currentTester.age) {
+                        try {
+                            // 转换性别格式：Male -> 男, Female -> 女
+                            const gender = currentTester.gender === 'Male' ? '男' : 
+                                         currentTester.gender === 'Female' ? '女' : '男';
+                            
+                            // 解析年龄
+                            const age = parseInt(currentTester.age);
+                            
+                            if (!isNaN(age)) {
+                                gripStrengthScore = calculateGripStrengthScore(gripStrength, gender, age);
+                                hasGripStrength = true;
+                            }
+                        } catch (error) {
+                            console.error('计算握力分数时发生异常:', error);
+                        }
+                    }
+                    
                     // 计算AD风险指数
-                    if (scaleCount > 0) {
-                        // 如果有量表数据：AD风险指数 = (脑电最终指标/2 + 量表分数/2)
+                    if (scaleCount > 0 && hasGripStrength) {
+                        // 如果有脑电、量表和握力数据：AD风险指数 = (脑电最终指标/3 + 量表分数/3 + 握力分数/3)
+                        adRiskValue = (brainwaveFinalIndex / 3.0) + (finalScaleScore / 3.0) + (gripStrengthScore / 3.0);
+                    } else if (scaleCount > 0) {
+                        // 如果只有脑电和量表数据：AD风险指数 = (脑电最终指标/2 + 量表分数/2)
                         adRiskValue = (brainwaveFinalIndex / 2.0) + (finalScaleScore / 2.0);
+                    } else if (hasGripStrength) {
+                        // 如果只有脑电和握力数据：AD风险指数 = (脑电最终指标/2 + 握力分数/2)
+                        adRiskValue = (brainwaveFinalIndex / 2.0) + (gripStrengthScore / 2.0);
                     } else {
                         // 如果只有脑电数据：AD风险指数 = 脑电最终指标
                         adRiskValue = brainwaveFinalIndex;
@@ -177,7 +214,7 @@ router.post('/', authenticateToken, async (req, res) => {
                 medicalStaffName,
                 institutionId,
                 testDate,
-                testStatus
+                testStatus: testStatus
             }
         });
 

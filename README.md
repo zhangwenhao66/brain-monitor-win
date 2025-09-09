@@ -28,7 +28,7 @@
 
 ### 数据库架构（MySQL）
 - **数据库名**: brain_mirror
-- **表结构**: 机构表、医护人员表、测试者表、测试记录表、测试结果表
+- **表结构**: 机构表、工作人员表、测试者表、测试记录表、测试结果表
 - **特性**: 支持多机构多租户、数据关联完整性、外键约束
 
 ## 🔧 核心功能模块
@@ -38,9 +38,9 @@
 - **机构登录**: 机构ID和密码验证登录
 - **机构信息**: 联系人、联系电话、机构地址管理
 
-### 2. 医护人员管理模块
-- **医护人员注册**: 工号、姓名、账号密码等信息录入
-- **医护人员登录**: 多机构环境下账号唯一性验证
+### 2. 工作人员管理模块
+- **工作人员注册**: 工号、姓名、账号密码等信息录入
+- **工作人员登录**: 多机构环境下账号唯一性验证
 - **人员信息管理**: 科室、职位、联系方式管理
 - **权限控制**: 基于机构的访问权限控制
 
@@ -79,7 +79,7 @@ brain-monitor-win/
 │   │   └── audio/                        # 音频资源
 │   ├── Views/                            # UI界面层
 │   │   ├── InstitutionLoginWindow.xaml   # 机构登录界面
-│   │   ├── MedicalStaffWindow.xaml       # 医护人员操作界面
+│   │   ├── MedicalStaffWindow.xaml       # 工作人员操作界面
 │   │   ├── TesterInfoWindow.xaml         # 测试者信息录入
 │   │   ├── TestWindow.xaml               # 脑电波测试界面
 │   │   ├── ReportWindow.xaml             # 健康报告界面
@@ -258,9 +258,9 @@ private const string BaseUrl = "https://bm.miyinbot.com/api";
 
 ### 认证接口
 - `POST /api/auth/institution/login` - 机构登录
-- `POST /api/auth/medical-staff/login` - 医护人员登录
+- `POST /api/auth/medical-staff/login` - 工作人员登录
 - `POST /api/auth/institution/register` - 机构注册
-- `POST /api/auth/medical-staff/register` - 医护人员注册
+- `POST /api/auth/medical-staff/register` - 工作人员注册
 
 ### 测试者管理接口
 - `GET /api/testers` - 获取测试者列表

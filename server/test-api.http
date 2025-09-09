@@ -2,7 +2,7 @@
 ### 使用 VS Code 的 REST Client 扩展或 Postman 进行测试
 
 ### 1. 健康检查
-GET http://localhost:3000/health
+GET http://localhost:3000/api/health
 
 ### 2. 机构注册
 POST http://localhost:3000/api/auth/institution/register
@@ -26,7 +26,7 @@ Content-Type: application/json
   "password": "123456"
 }
 
-### 4. 医护人员注册
+### 4. 工作人员注册
 POST http://localhost:3000/api/auth/medical-staff/register
 Content-Type: application/json
 
@@ -41,7 +41,7 @@ Content-Type: application/json
   "institutionId": 1
 }
 
-### 5. 医护人员登录
+### 5. 工作人员登录
 POST http://localhost:3000/api/auth/medical-staff/login
 Content-Type: application/json
 

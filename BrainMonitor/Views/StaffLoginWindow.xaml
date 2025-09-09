@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.modernwpf.com/2019"
         ui:WindowHelper.UseModernWindowStyle="True"
-        Title="医护人员登录注册" Height="700" Width="500"
+        Title="工作人员登录注册" Height="700" Width="500"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource ApplicationPageBackgroundThemeBrush}"
         ResizeMode="NoResize">
@@ -99,7 +99,7 @@
     <Grid Margin="40">
         <!-- 标题区域 -->
         <TextBlock x:Name="TitleText"
-                   Text="医护人员登录"
+                   Text="工作人员登录"
                    FontSize="24"
                    FontWeight="Bold"
                    Foreground="#0078D4"
@@ -113,7 +113,7 @@
                 Width="420">
             <StackPanel>
                 <!-- 标题 -->
-                <!-- <TextBlock Text="医护人员"  -->
+                <!-- <TextBlock Text="工作人员"  -->
                            <!-- Style="{StaticResource TitleText}" -->
                            <!-- Margin="0,0,0,30"/> -->
                 

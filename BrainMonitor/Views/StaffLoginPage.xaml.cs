@@ -56,7 +56,7 @@ namespace BrainMirror.Views
                 
                 if (loginSuccess)
                 {
-                    // 登录成功，导航到医护人员操作页面，并传递需要刷新的标志
+                    // 登录成功，导航到工作人员操作页面，并传递需要刷新的标志
                     var medicalStaffPage = new MedicalStaffPage();
                     medicalStaffPage.SetRefreshFlag(true);
                     NavigationManager.NavigateTo(medicalStaffPage);
@@ -123,7 +123,7 @@ namespace BrainMirror.Views
                 return;
             }
 
-            // 创建新的医护人员对象
+            // 创建新的工作人员对象
             var newStaff = new MedicalStaff
             {
                 Name = name,
@@ -153,7 +153,7 @@ namespace BrainMirror.Views
                     
                     if (loginSuccess)
                     {
-                        // 导航到医护人员操作页面
+                        // 导航到工作人员操作页面
                         NavigationManager.NavigateTo(new MedicalStaffPage());
                     }
                     else
@@ -183,7 +183,7 @@ namespace BrainMirror.Views
 
         private void BackButton_Click(object sender, RoutedEventArgs e)
         {
-            // 返回到医护人员操作页面
+            // 返回到工作人员操作页面
             NavigationManager.NavigateTo(new MedicalStaffPage());
         }
 

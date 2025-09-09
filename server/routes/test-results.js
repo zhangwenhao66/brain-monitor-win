@@ -39,7 +39,7 @@ router.post('/', authenticateToken, async (req, res) => {
             });
         }
 
-        // 验证测试记录是否存在且属于当前医护人员
+        // 验证测试记录是否存在且属于当前工作人员
         const [testRecord] = await query(
             'SELECT id, medical_staff_id, test_status FROM test_records WHERE id = ?',
             [testRecordId]
@@ -126,7 +126,7 @@ router.get('/test-record/:recordId', authenticateToken, async (req, res) => {
     try {
         const { recordId } = req.params;
 
-        // 验证测试记录是否存在且属于当前医护人员
+        // 验证测试记录是否存在且属于当前工作人员
         const [testRecord] = await query(
             'SELECT id, medical_staff_id FROM test_records WHERE id = ?',
             [recordId]
@@ -187,7 +187,7 @@ router.get('/test-record/:recordId/:resultType', authenticateToken, async (req, 
             });
         }
 
-        // 验证测试记录是否存在且属于当前医护人员
+        // 验证测试记录是否存在且属于当前工作人员
         const [testRecord] = await query(
             'SELECT id, medical_staff_id FROM test_records WHERE id = ?',
             [recordId]
@@ -251,7 +251,7 @@ router.delete('/test-record/:recordId/:resultType', authenticateToken, async (re
             });
         }
 
-        // 验证测试记录是否存在且属于当前医护人员
+        // 验证测试记录是否存在且属于当前工作人员
         const [testRecord] = await query(
             'SELECT id, medical_staff_id, test_status FROM test_records WHERE id = ?',
             [recordId]

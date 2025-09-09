@@ -56,7 +56,7 @@ namespace BrainMirror.Views
                 Phone = PhoneTextBox.Text
             };
 
-            // 将新测试者信息添加到当前登录医护人员的测试者列表
+            // 将新测试者信息添加到当前登录工作人员的测试者列表
             GlobalTesterList.AddTesterForCurrentStaff(newTester);
 
             // 设置对话框结果为成功并关闭窗口

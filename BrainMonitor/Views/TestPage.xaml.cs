@@ -12,6 +12,7 @@ using System.Runtime.InteropServices;
 using System.IO.Ports;
 using BrainMirror.Models;
 using System.Text.Json;
+using BrainMirror.Configuration;
 
 namespace BrainMirror.Views
 {
@@ -2595,7 +2596,7 @@ namespace BrainMirror.Views
                         {
                             httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
                             
-                            var reportResponse = await httpClient.GetAsync($"https://bm.miyinbot.com/api/test-records/{testRecordId}/report");
+                            var reportResponse = await httpClient.GetAsync($"{ConfigHelper.GetApiBaseUrl()}/test-records/{testRecordId}/report");
                             if (reportResponse.IsSuccessStatusCode)
                             {
                                 var reportContent = await reportResponse.Content.ReadAsStringAsync();
@@ -2679,7 +2680,7 @@ namespace BrainMirror.Views
             // 停止数据采集和脑电波模拟
             StopDataCollection();
             
-            // 返回到医护人员操作页面
+            // 返回到工作人员操作页面
             NavigationManager.NavigateTo(new MedicalStaffPage());
         }
         
@@ -2726,12 +2727,45 @@ namespace BrainMirror.Views
                 // 量表分数 = 1 - 平均量表分数（越接近0%越正常，越接近100%风险越高）
                 double finalScaleScore = 100.0 - averageScaleScore;
                 
+                // 计算握力分数
+                double gripStrengthScore = 0.0;
+                bool hasGripStrength = false;
+                
+                if (gripStrength.HasValue && CurrentTester != null)
+                {
+                    try
+                    {
+                        // 解析年龄
+                        if (int.TryParse(CurrentTester.Age, out int age))
+                        {
+                            gripStrengthScore = Services.GripStrengthService.CalculateGripStrengthScore(
+                                gripStrength.Value, CurrentTester.Gender, age);
+                            hasGripStrength = true;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"计算握力分数时发生异常: {ex.Message}");
+                    }
+                }
+                
                 // 计算AD风险指数
                 double adRiskIndex;
-                if (scaleCount > 0)
+                
+                if (scaleCount > 0 && hasGripStrength)
                 {
-                    // 如果有量表数据：AD风险指数 = (脑电最终指标/2 + 量表分数/2)
+                    // 如果有脑电、量表和握力数据：AD风险指数 = (脑电最终指标/3 + 量表分数/3 + 握力分数/3)
+                    adRiskIndex = (brainwaveFinalIndex / 3.0) + (finalScaleScore / 3.0) + (gripStrengthScore / 3.0);
+                }
+                else if (scaleCount > 0)
+                {
+                    // 如果只有脑电和量表数据：AD风险指数 = (脑电最终指标/2 + 量表分数/2)
                     adRiskIndex = (brainwaveFinalIndex / 2.0) + (finalScaleScore / 2.0);
+                }
+                else if (hasGripStrength)
+                {
+                    // 如果只有脑电和握力数据：AD风险指数 = (脑电最终指标/2 + 握力分数/2)
+                    adRiskIndex = (brainwaveFinalIndex / 2.0) + (gripStrengthScore / 2.0);
                 }
                 else
                 {
@@ -2746,6 +2780,7 @@ namespace BrainMirror.Views
                 System.Diagnostics.Debug.WriteLine($"  脑电最终指标: {brainwaveFinalIndex:F2}%");
                 System.Diagnostics.Debug.WriteLine($"  平均量表分数: {averageScaleScore:F2}%");
                 System.Diagnostics.Debug.WriteLine($"  最终量表分数: {finalScaleScore:F2}%");
+                System.Diagnostics.Debug.WriteLine($"  握力分数: {gripStrengthScore:F2}%");
                 System.Diagnostics.Debug.WriteLine($"  AD风险指数: {adRiskIndex:F2}");
                 
                 return adRiskIndex;
@@ -2802,7 +2837,7 @@ namespace BrainMirror.Views
 
             try
             {
-                // 获取当前医护人员信息
+                // 获取当前工作人员信息
                 string staffName = GetCurrentStaffName();
                 string institutionId = GetCurrentInstitutionId();
                 
@@ -2840,7 +2875,7 @@ namespace BrainMirror.Views
                     var content = new System.Net.Http.StringContent(jsonContent, System.Text.Encoding.UTF8, "application/json");
                     
                     // 发送请求
-                    var response = await httpClient.PostAsync("https://bm.miyinbot.com/api/test-records", content);
+                    var response = await httpClient.PostAsync($"{ConfigHelper.GetApiBaseUrl()}/test-records", content);
                     
                     if (response.IsSuccessStatusCode)
                     {
@@ -2880,22 +2915,22 @@ namespace BrainMirror.Views
             return (false, null);
         }
         
-        // 获取当前医护人员姓名
+        // 获取当前工作人员姓名
         private string GetCurrentStaffName()
         {
             try
             {
-                // 从全局医护人员管理获取当前登录的医护人员姓名
+                // 从全局工作人员管理获取当前登录的工作人员姓名
                 if (GlobalMedicalStaffManager.CurrentLoggedInStaff != null)
                 {
-                    return GlobalMedicalStaffManager.CurrentLoggedInStaff.Name ?? "未知医护人员";
+                    return GlobalMedicalStaffManager.CurrentLoggedInStaff.Name ?? "未知工作人员";
                 }
-                return "未知医护人员";
+                return "未知工作人员";
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"获取医护人员姓名失败: {ex.Message}");
-                return "未知医护人员";
+                System.Diagnostics.Debug.WriteLine($"获取工作人员姓名失败: {ex.Message}");
+                return "未知工作人员";
             }
         }
         
@@ -2914,12 +2949,12 @@ namespace BrainMirror.Views
             }
         }
         
-        // 获取当前医护人员ID
+        // 获取当前工作人员ID
         private int GetCurrentMedicalStaffId()
         {
             try
             {
-                // 从全局医护人员管理获取当前登录的医护人员ID
+                // 从全局工作人员管理获取当前登录的工作人员ID
                 if (GlobalMedicalStaffManager.CurrentLoggedInStaff != null)
                 {
                     // 尝试从JWT token中解析用户ID
@@ -2956,17 +2991,17 @@ namespace BrainMirror.Views
                     // 如果无法从token解析，尝试从全局状态获取
                     if (GlobalMedicalStaffManager.CurrentLoggedInStaff.Id > 0)
                     {
-                        System.Diagnostics.Debug.WriteLine($"从全局状态获取医护人员ID: {GlobalMedicalStaffManager.CurrentLoggedInStaff.Id}");
+                        System.Diagnostics.Debug.WriteLine($"从全局状态获取工作人员ID: {GlobalMedicalStaffManager.CurrentLoggedInStaff.Id}");
                         return GlobalMedicalStaffManager.CurrentLoggedInStaff.Id;
                     }
                 }
                 
-                System.Diagnostics.Debug.WriteLine("无法获取医护人员ID，返回0");
+                System.Diagnostics.Debug.WriteLine("无法获取工作人员ID，返回0");
                 return 0;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"获取医护人员ID异常: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"获取工作人员ID异常: {ex.Message}");
                 return 0;
             }
         }
@@ -2976,7 +3011,7 @@ namespace BrainMirror.Views
         {
             try
             {
-                // 从全局医护人员管理获取当前用户的JWT令牌
+                // 从全局工作人员管理获取当前用户的JWT令牌
                 if (GlobalMedicalStaffManager.CurrentToken != null)
                 {
                     return GlobalMedicalStaffManager.CurrentToken;

@@ -135,7 +135,7 @@ router.post('/institution/login', async (req, res) => {
     }
 });
 
-// 医护人员注册
+// 工作人员注册
 router.post('/medical-staff/register', async (req, res) => {
     try {
         const { 
@@ -199,7 +199,7 @@ router.post('/medical-staff/register', async (req, res) => {
         // 加密密码
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // 插入医护人员记录
+        // 插入工作人员记录
         const result = await query(
             `INSERT INTO medical_staff 
              (staff_id, name, account, password, phone, department, position, institution_id) 
@@ -209,7 +209,7 @@ router.post('/medical-staff/register', async (req, res) => {
 
         res.status(201).json({
             success: true,
-            message: '医护人员注册成功',
+            message: '工作人员注册成功',
             data: {
                 id: result.insertId,
                 staffId,
@@ -219,7 +219,7 @@ router.post('/medical-staff/register', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('医护人员注册错误:', error);
+        console.error('工作人员注册错误:', error);
         res.status(500).json({
             success: false,
             message: '服务器内部错误'
@@ -227,7 +227,7 @@ router.post('/medical-staff/register', async (req, res) => {
     }
 });
 
-// 医护人员登录
+// 工作人员登录
 router.post('/medical-staff/login', async (req, res) => {
     try {
         const { account, password, institutionId } = req.body;
@@ -240,7 +240,7 @@ router.post('/medical-staff/login', async (req, res) => {
             });
         }
 
-        // 查询医护人员信息 - 根据账号和机构ID查找
+        // 查询工作人员信息 - 根据账号和机构ID查找
         const [staff] = await query(
             `SELECT ms.id, ms.staff_id, ms.name, ms.account, ms.password, ms.phone, 
                     ms.department, ms.position, ms.institution_id, ms.is_active,
@@ -307,7 +307,7 @@ router.post('/medical-staff/login', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('医护人员登录错误:', error);
+        console.error('工作人员登录错误:', error);
         res.status(500).json({
             success: false,
             message: '服务器内部错误'

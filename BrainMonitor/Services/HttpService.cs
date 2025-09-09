@@ -6,13 +6,14 @@ using Newtonsoft.Json;
 using System.Collections.Generic; // Added for List
 using System.Net.Sockets; // Added for SocketException
 using System.IO; // Added for IOException
+using BrainMirror.Configuration;
 
 namespace BrainMirror.Services
 {
     public class HttpService
     {
         private static readonly HttpClient httpClient = new HttpClient();
-        private const string BaseUrl = "https://bm.miyinbot.com/api";
+        private static string BaseUrl => ConfigHelper.GetApiBaseUrl();
 
         static HttpService()
         {
@@ -303,7 +304,7 @@ namespace BrainMirror.Services
         public string ContactPhone { get; set; } = string.Empty;
     }
 
-    // 医护人员注册请求模型
+    // 工作人员注册请求模型
     public class MedicalStaffRegisterRequest
     {
         [JsonProperty("staffId")]
@@ -331,7 +332,7 @@ namespace BrainMirror.Services
         public int InstitutionId { get; set; }
     }
 
-    // 医护人员登录请求模型
+    // 工作人员登录请求模型
     public class MedicalStaffLoginRequest
     {
         [JsonProperty("account")]
@@ -344,7 +345,7 @@ namespace BrainMirror.Services
         public int InstitutionId { get; set; }
     }
 
-    // 医护人员登录响应模型
+    // 工作人员登录响应模型
     public class MedicalStaffLoginResponse
     {
         [JsonProperty("token")]
@@ -354,7 +355,7 @@ namespace BrainMirror.Services
         public MedicalStaffUser User { get; set; } = new MedicalStaffUser();
     }
 
-    // 医护人员用户信息模型
+    // 工作人员用户信息模型
     public class MedicalStaffUser
     {
         [JsonProperty("id")]

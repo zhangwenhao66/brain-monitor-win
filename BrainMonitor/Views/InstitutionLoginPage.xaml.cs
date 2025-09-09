@@ -77,10 +77,10 @@ namespace BrainMirror.Views
                         response.Data.InstitutionDbId
                     );
                     
-                    // 不自动登录医护人员，保持未登录状态
+                    // 不自动登录工作人员，保持未登录状态
                     // GlobalMedicalStaffManager.Login("1", "1");
                     
-                    // 导航到医护人员操作界面
+                    // 导航到工作人员操作界面
                     NavigationManager.NavigateTo(new MedicalStaffPage());
                 }
                 else

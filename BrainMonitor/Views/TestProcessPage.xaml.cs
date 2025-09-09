@@ -10,6 +10,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using BrainMirror.Models;
 using BrainMirror.Services;
+using BrainMirror.Configuration;
 
 namespace BrainMirror.Views
 {
@@ -65,6 +66,19 @@ namespace BrainMirror.Views
             "现在测试结束，请返回测试界面生成报告"
         };
         
+        // 开发模式下的测试流程步骤
+        private readonly string[] devInstructions = new string[]
+        {
+            "下面将进行睁眼测试，测试时间为5秒",
+            "测试过程中请盯着界面中的点，保持头不动，尽量不眨眼",
+            "现在开始睁眼测试，剩余时间：{0}",
+            "睁眼测试结束",
+            "下面将进行闭眼测试，测试时间为5秒",
+            "测试过程中请闭上双眼，保持头和眼球不动",
+            "现在开始闭眼测试，剩余时间：{0}",
+            "现在测试结束，请返回测试界面生成报告"
+        };
+        
         // 每个步骤的持续时间（秒）
         private readonly int[] stepDurations = new int[]
         {
@@ -74,6 +88,19 @@ namespace BrainMirror.Views
             3,  // 第四个指令显示3秒
             3,  // 第五个指令显示3秒
             180,  // 第二次倒计时3分钟（闭眼测试）
+            3,  // 第七个指令显示3秒
+            -1   // 最后一个指令一直显示
+        };
+        
+        // 开发模式下每个步骤的持续时间（秒）
+        private readonly int[] devStepDurations = new int[]
+        {
+            3,  // 第一个指令显示3秒
+            3,  // 第二个指令显示3秒
+            5,   // 第一次倒计时5秒（睁眼测试）
+            3,  // 第四个指令显示3秒
+            3,  // 第五个指令显示3秒
+            5,   // 第二次倒计时5秒（闭眼测试）
             3,  // 第七个指令显示3秒
             -1   // 最后一个指令一直显示
         };
@@ -159,7 +186,9 @@ namespace BrainMirror.Views
         {
             if (currentStep < instructions.Length)
             {
-                string instruction = instructions[currentStep];
+                // 根据开发模式选择指令数组
+                string[] currentInstructions = AppConfig.Instance.IsDevelopment() ? devInstructions : instructions;
+                string instruction = currentInstructions[currentStep];
                 
                 // 播放对应的音频
                 PlayAudio(currentStep);
@@ -167,7 +196,8 @@ namespace BrainMirror.Views
                 // 如果是倒计时步骤，显示倒计时
                 if (currentStep == 2 || currentStep == 6)
                 {
-                    countdownSeconds = 180; // 3分钟（180秒）
+                    // 根据开发模式设置倒计时时间
+                    countdownSeconds = AppConfig.Instance.IsDevelopment() ? 5 : 180; // 开发模式5秒，生产模式3分钟
                     isCountingDown = true;
                     
                     // 设置测试类型
@@ -332,7 +362,7 @@ namespace BrainMirror.Views
         {
             try
             {
-                // 获取机构ID、医护人员姓名、测试者姓名
+                // 获取机构ID、工作人员姓名、测试者姓名
                 string institutionId = GetCurrentInstitutionId();
                 string staffName = GetCurrentStaffName();
                 string testerName = GetCurrentTesterName();
@@ -380,7 +410,7 @@ namespace BrainMirror.Views
                 
                 // 文件上传不需要测试记录ID
                 
-                // 获取当前医护人员ID
+                // 获取当前工作人员ID
                 int medicalStaffId = GetCurrentMedicalStaffId();
                 if (medicalStaffId <= 0)
                 {
@@ -416,7 +446,7 @@ namespace BrainMirror.Views
                         formData.Add(new System.Net.Http.StringContent(testerName), "testerName");
                         
                         // 发送请求
-                        var response = await httpClient.PostAsync("https://bm.miyinbot.com/api/brainwave-data/upload", formData);
+                        var response = await httpClient.PostAsync($"{ConfigHelper.GetApiBaseUrl()}/brainwave-data/upload", formData);
                         
                         if (response.IsSuccessStatusCode)
                         {
@@ -510,7 +540,7 @@ namespace BrainMirror.Views
                     var jsonContent = System.Text.Json.JsonSerializer.Serialize(testRecordData);
                     var content = new System.Net.Http.StringContent(jsonContent, System.Text.Encoding.UTF8, "application/json");
                     
-                    var response = await httpClient.PostAsync("https://bm.miyinbot.com/api/test-records", content);
+                    var response = await httpClient.PostAsync($"{ConfigHelper.GetApiBaseUrl()}/test-records", content);
                     
                     if (response.IsSuccessStatusCode)
                     {
@@ -545,12 +575,12 @@ namespace BrainMirror.Views
             }
         }
         
-        // 获取当前医护人员ID
+        // 获取当前工作人员ID
         private int GetCurrentMedicalStaffId()
         {
             try
             {
-                // 从全局医护人员管理获取当前登录的医护人员ID
+                // 从全局工作人员管理获取当前登录的工作人员ID
                 if (GlobalMedicalStaffManager.CurrentLoggedInStaff != null)
                 {
                     // 尝试从JWT token中解析用户ID
@@ -587,17 +617,17 @@ namespace BrainMirror.Views
                     // 如果无法从token解析，尝试从全局状态获取
                     if (GlobalMedicalStaffManager.CurrentLoggedInStaff.Id > 0)
                     {
-                        System.Diagnostics.Debug.WriteLine($"从全局状态获取医护人员ID: {GlobalMedicalStaffManager.CurrentLoggedInStaff.Id}");
+                        System.Diagnostics.Debug.WriteLine($"从全局状态获取工作人员ID: {GlobalMedicalStaffManager.CurrentLoggedInStaff.Id}");
                         return GlobalMedicalStaffManager.CurrentLoggedInStaff.Id;
                     }
                 }
                 
-                System.Diagnostics.Debug.WriteLine("无法获取医护人员ID，返回0");
+                System.Diagnostics.Debug.WriteLine("无法获取工作人员ID，返回0");
                 return 0;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"获取医护人员ID异常: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"获取工作人员ID异常: {ex.Message}");
                 return 0;
             }
         }
@@ -607,7 +637,7 @@ namespace BrainMirror.Views
         {
             try
             {
-                // 从全局医护人员管理获取当前用户的JWT令牌
+                // 从全局工作人员管理获取当前用户的JWT令牌
                 if (GlobalMedicalStaffManager.CurrentToken != null)
                 {
                     return GlobalMedicalStaffManager.CurrentToken;
@@ -628,14 +658,14 @@ namespace BrainMirror.Views
             return GlobalInstitutionManager.CurrentInstitutionId;
         }
         
-        // 获取当前医护人员姓名
+        // 获取当前工作人员姓名
         private string GetCurrentStaffName()
         {
             if (GlobalMedicalStaffManager.CurrentLoggedInStaff != null)
             {
-                return GlobalMedicalStaffManager.CurrentLoggedInStaff.Name ?? "未知医护人员";
+                return GlobalMedicalStaffManager.CurrentLoggedInStaff.Name ?? "未知工作人员";
             }
-            return "未知医护人员";
+            return "未知工作人员";
         }
         
         // 获取当前测试者姓名
@@ -780,7 +810,7 @@ namespace BrainMirror.Views
                     var content = new System.Net.Http.StringContent(jsonContent, System.Text.Encoding.UTF8, "application/json");
                     
                     // 发送更新请求
-                    var response = await httpClient.PutAsync("https://bm.miyinbot.com/api/brainwave-data/update-result", content);
+                    var response = await httpClient.PutAsync($"{ConfigHelper.GetApiBaseUrl()}/brainwave-data/update-result", content);
                     
                     if (response.IsSuccessStatusCode)
                     {
@@ -813,7 +843,7 @@ namespace BrainMirror.Views
         private void ResetStepDuration(int step)
         {
             // 重置步骤持续时间到原始值
-            int[] originalDurations = { 3, 3, 180, 3, 3, 180, 3, -1 };
+            int[] originalDurations = AppConfig.Instance.IsDevelopment() ? devStepDurations : new int[] { 3, 3, 180, 3, 3, 180, 3, -1 };
             if (step < originalDurations.Length)
             {
                 stepDurations[step] = originalDurations[step];

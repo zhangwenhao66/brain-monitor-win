@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using BrainMirror.Services;
+using BrainMirror.Configuration;
 
 namespace BrainMirror.Views
 {
@@ -94,7 +95,7 @@ namespace BrainMirror.Views
 
         private void ReturnButton_Click(object sender, RoutedEventArgs e)
         {
-            // 返回到医护人员操作页面
+            // 返回到工作人员操作页面
             NavigationManager.NavigateTo(new MedicalStaffPage());
         }
 
@@ -128,7 +129,7 @@ namespace BrainMirror.Views
                         {
                             httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
                             
-                            var reportResponse = await httpClient.GetAsync($"https://bm.miyinbot.com/api/test-records/{selectedRecord.Id}/report");
+                            var reportResponse = await httpClient.GetAsync($"{ConfigHelper.GetApiBaseUrl()}/test-records/{selectedRecord.Id}/report");
                             
                             if (reportResponse.IsSuccessStatusCode)
                             {

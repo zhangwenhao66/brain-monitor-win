@@ -19,7 +19,7 @@ namespace BrainMirror.Views
         public string Phone { get; set; } = string.Empty;
     }
 
-    // 全局医护人员管理
+    // 全局工作人员管理
     public static class GlobalMedicalStaffManager
     {
         public static MedicalStaff? CurrentLoggedInStaff { get; set; } = null;
@@ -255,13 +255,13 @@ namespace BrainMirror.Views
         public string Phone { get; set; } = string.Empty;
     }
 
-    // 全局测试者列表 - 与医护人员绑定
+    // 全局测试者列表 - 与工作人员绑定
     public static class GlobalTesterList
     {
-        // 每个医护人员的测试者列表
+        // 每个工作人员的测试者列表
         public static Dictionary<string, List<Tester>> StaffTesters { get; set; } = new Dictionary<string, List<Tester>>();
 
-        // 获取当前登录医护人员的测试者列表
+        // 获取当前登录工作人员的测试者列表
         public static List<Tester> GetCurrentStaffTesters()
         {
             if (GlobalMedicalStaffManager.CurrentLoggedInStaff == null)
@@ -272,14 +272,14 @@ namespace BrainMirror.Views
             string staffAccount = GlobalMedicalStaffManager.CurrentLoggedInStaff.Account;
             if (!StaffTesters.ContainsKey(staffAccount))
             {
-                // 如果该医护人员还没有测试者列表，创建一个空的
+                // 如果该工作人员还没有测试者列表，创建一个空的
                 StaffTesters[staffAccount] = new List<Tester>();
             }
 
             return StaffTesters[staffAccount];
         }
 
-        // 为当前登录的医护人员添加测试者
+        // 为当前登录的工作人员添加测试者
         public static void AddTesterForCurrentStaff(Tester tester)
         {
             if (GlobalMedicalStaffManager.CurrentLoggedInStaff == null)
@@ -361,7 +361,7 @@ namespace BrainMirror.Views
             // 检查是否已登录
             if (GlobalMedicalStaffManager.CurrentLoggedInStaff == null)
             {
-                ModernMessageBoxWindow.Show("请先登录医护人员账号", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
+                ModernMessageBoxWindow.Show("请先登录工作人员账号", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
                 return;
             }
 
@@ -398,7 +398,7 @@ namespace BrainMirror.Views
             // 检查是否已登录
             if (GlobalMedicalStaffManager.CurrentLoggedInStaff == null)
             {
-                ModernMessageBoxWindow.Show("请先登录医护人员账号", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
+                ModernMessageBoxWindow.Show("请先登录工作人员账号", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
                 return;
             }
 
@@ -487,7 +487,7 @@ namespace BrainMirror.Views
             this.Close();
         }
 
-        // 医护人员相关方法
+        // 工作人员相关方法
         private void UpdateStaffInfo()
         {
             if (GlobalMedicalStaffManager.CurrentLoggedInStaff != null)

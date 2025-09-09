@@ -91,7 +91,7 @@ const authenticateTesterAccess = async (req, res, next) => {
             });
         }
 
-        // 检查测试者是否属于当前医护人员
+        // 检查测试者是否属于当前工作人员
         const [tester] = await query(
             'SELECT id FROM testers WHERE id = ? AND medical_staff_id = ?',
             [testerId, req.user.id]

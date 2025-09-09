@@ -49,8 +49,8 @@ fi
 
 echo
 echo "🚀 正在启动脑镜BrainMirror Server..."
-echo "📍 服务器地址: http://localhost:3000"
-echo "📊 健康检查: http://localhost:3000/health"
+echo "📍 服务器地址: http://localhost:3000/api"
+echo "📊 健康检查: http://localhost:3000/api/health"
 echo
 echo "按 Ctrl+C 停止服务器"
 echo "========================================"

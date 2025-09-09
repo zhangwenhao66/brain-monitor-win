@@ -18,11 +18,11 @@ namespace BrainMirror.Views
             // 根据当前选中的Tab更新标题
             if (MainTabControl.SelectedIndex == 0)
             {
-                TitleText.Text = "医护人员登录";
+                TitleText.Text = "工作人员登录";
             }
             else
             {
-                TitleText.Text = "医护人员注册";
+                TitleText.Text = "工作人员注册";
             }
         }
 
@@ -114,7 +114,7 @@ namespace BrainMirror.Views
                 return;
             }
 
-            // 创建新的医护人员对象
+            // 创建新的工作人员对象
             var newStaff = new MedicalStaff
             {
                 Name = name,

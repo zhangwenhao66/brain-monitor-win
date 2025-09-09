@@ -136,7 +136,7 @@ namespace BrainMirror.Views
 
         private void ReturnButton_Click(object sender, RoutedEventArgs e)
         {
-            // 返回医护人员操作界面
+            // 返回工作人员操作界面
             var medicalStaffWindow = new MedicalStaffWindow();
             medicalStaffWindow.Show();
             this.Close();

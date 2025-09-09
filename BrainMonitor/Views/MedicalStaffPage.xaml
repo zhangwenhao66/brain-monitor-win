@@ -13,7 +13,7 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- 医护人员信息区域 -->
+        <!-- 工作人员信息区域 -->
         <Border Grid.Row="0" Style="{StaticResource CardStyle}" Height="120">
             <Grid>
                 <Grid.ColumnDefinitions>
@@ -103,7 +103,7 @@
                     FontSize="15"
                     LineHeight="15"
                     Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                    Text="本系统是一套先进的脑电监测解决方案，专为医疗机构设计。通过高精度的脑电信号采集设备，实时监测患者的脑电活动，为医护人员提供准确的诊断依据。系统具有操作简便、数据可靠、分析精准等特点，能够有效辅助医生进行神经系统疾病的诊断和治疗。" />
+                    Text="本系统是一套先进的脑电监测解决方案，专为医疗机构设计。通过高精度的脑电信号采集设备，实时监测患者的脑电活动，为工作人员提供准确的诊断依据。系统具有操作简便、数据可靠、分析精准等特点，能够有效辅助医生进行神经系统疾病的诊断和治疗。" />
             </StackPanel>
         </Border>
 

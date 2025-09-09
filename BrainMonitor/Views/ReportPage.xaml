@@ -68,11 +68,12 @@
         <Grid Grid.Row="2">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
 
             <!-- AD风险评估卡片 -->
-            <Border Style="{StaticResource CardStyle}" Grid.Column="0" Margin="0,0,6,0" HorizontalAlignment="Center">
+            <Border Style="{StaticResource CardStyle}" Grid.Column="1" HorizontalAlignment="Center">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,5" HorizontalAlignment="Center">
                         <TextBlock Text="AD风险指数"
@@ -103,31 +104,6 @@
                     </Border>
                 </StackPanel>
             </Border>
-
-            <!-- 大脑年龄卡片 -->
-            <Border Style="{StaticResource CardStyle}" Grid.Column="1" Margin="6,0,0,0" HorizontalAlignment="Center">
-                <StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,5" HorizontalAlignment="Center">
-                        <TextBlock Text="大脑年龄"
-                            Style="{StaticResource ModernLabel}"
-                            FontSize="14" />
-                    </StackPanel>
-                    
-
-                    <TextBlock x:Name="BrainAgeText"
-                        FontSize="22"
-                        FontWeight="Bold"
-                        Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}"
-                        HorizontalAlignment="Center"
-                        Margin="0,0,0,4" />
-
-                    <TextBlock x:Name="BrainAgeComparisonText"
-                        FontSize="11"
-                        Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                        HorizontalAlignment="Center" />
-                </StackPanel>
-            </Border>
-            
 
         </Grid>
 

@@ -6,6 +6,7 @@ using BrainMirror.Views;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using BrainMirror.Configuration;
 
 namespace BrainMirror.Views
 {
@@ -52,19 +53,19 @@ namespace BrainMirror.Views
 
             try
             {
-                // 登录成功，自动登录默认的测试医护人员账号
+                // 登录成功，自动登录默认的测试工作人员账号
                 bool loginSuccess = await GlobalMedicalStaffManager.LoginAsync("1", "1");
                 
                 if (loginSuccess)
                 {
-                    // 打开医护人员操作界面
+                    // 打开工作人员操作界面
                     var medicalStaffWindow = new MedicalStaffWindow();
                     medicalStaffWindow.Show();
                     this.Close();
                 }
                 else
                 {
-                    ModernMessageBoxWindow.Show("医护人员登录失败", "登录失败", ModernMessageBoxWindow.MessageBoxType.Error);
+                    ModernMessageBoxWindow.Show("工作人员登录失败", "登录失败", ModernMessageBoxWindow.MessageBoxType.Error);
                 }
             }
             catch (System.Exception ex)
@@ -136,7 +137,7 @@ namespace BrainMirror.Views
                     var jsonContent = JsonSerializer.Serialize(registerData);
                     var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
                     
-                    var response = await httpClient.PostAsync("https://bm.miyinbot.com/api/auth/institution/register", content);
+                    var response = await httpClient.PostAsync($"{ConfigHelper.GetApiBaseUrl()}/auth/institution/register", content);
                     var responseContent = await response.Content.ReadAsStringAsync();
                     
                     var result = JsonSerializer.Deserialize<JsonElement>(responseContent);

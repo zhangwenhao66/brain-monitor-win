@@ -1,32 +1,32 @@
--- 创建数据库
+-- Create database
 CREATE DATABASE IF NOT EXISTS brain_mirror CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE brain_mirror;
 
--- 机构表
+-- Institutions table
 CREATE TABLE institutions (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    institution_id VARCHAR(100) UNIQUE NOT NULL COMMENT '机构ID',
-    institution_name VARCHAR(200) NOT NULL COMMENT '机构名称',
-    password VARCHAR(255) COMMENT '机构密码（可选）',
-    contact_person VARCHAR(100) COMMENT '联系人',
-    contact_phone VARCHAR(20) COMMENT '联系电话',
-    address TEXT COMMENT '机构地址',
+    institution_id VARCHAR(100) UNIQUE NOT NULL COMMENT 'Institution ID',
+    institution_name VARCHAR(200) NOT NULL COMMENT 'Institution Name',
+    password VARCHAR(255) COMMENT 'Institution Password (Optional)',
+    contact_person VARCHAR(100) COMMENT 'Contact Person',
+    contact_phone VARCHAR(20) COMMENT 'Contact Phone',
+    address TEXT COMMENT 'Institution Address',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NULL DEFAULT NULL
 );
 
--- 医护人员表
+-- Medical staff table
 CREATE TABLE medical_staff (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    staff_id VARCHAR(100) NOT NULL COMMENT '工号',
-    name VARCHAR(100) NOT NULL COMMENT '姓名',
-    account VARCHAR(100) NOT NULL COMMENT '登录账号',
-    password VARCHAR(255) NOT NULL COMMENT '密码（加密）',
-    phone VARCHAR(20) COMMENT '联系电话',
-    department VARCHAR(100) COMMENT '科室',
-    position VARCHAR(100) COMMENT '职位',
-    institution_id INT NOT NULL COMMENT '所属机构ID',
-    is_active BOOLEAN DEFAULT TRUE COMMENT '是否激活',
+    staff_id VARCHAR(100) NOT NULL COMMENT 'Staff ID',
+    name VARCHAR(100) NOT NULL COMMENT 'Name',
+    account VARCHAR(100) NOT NULL COMMENT 'Login Account',
+    password VARCHAR(255) NOT NULL COMMENT 'Password (Encrypted)',
+    phone VARCHAR(20) COMMENT 'Contact Phone',
+    department VARCHAR(100) COMMENT 'Department',
+    position VARCHAR(100) COMMENT 'Position',
+    institution_id INT NOT NULL COMMENT 'Institution ID',
+    is_active BOOLEAN DEFAULT TRUE COMMENT 'Is Active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NULL DEFAULT NULL,
     FOREIGN KEY (institution_id) REFERENCES institutions(id) ON DELETE CASCADE,
@@ -34,16 +34,16 @@ CREATE TABLE medical_staff (
     UNIQUE KEY uk_account_institution (account, institution_id)
 );
 
--- 测试者表
+-- Testers table
 CREATE TABLE testers (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    tester_id VARCHAR(100) NOT NULL COMMENT '测试者ID',
-    name VARCHAR(100) NOT NULL COMMENT '姓名',
-    age VARCHAR(10) COMMENT '年龄',
-    gender ENUM('男', '女', '其他') COMMENT '性别',
-    phone VARCHAR(20) COMMENT '联系电话',
-    medical_staff_id INT NOT NULL COMMENT '负责医护人员ID',
-    institution_id INT NOT NULL COMMENT '所属机构ID',
+    tester_id VARCHAR(100) NOT NULL COMMENT 'Tester ID',
+    name VARCHAR(100) NOT NULL COMMENT 'Name',
+    age VARCHAR(10) COMMENT 'Age',
+    gender ENUM('Male', 'Female', 'Other') COMMENT 'Gender',
+    phone VARCHAR(20) COMMENT 'Contact Phone',
+    medical_staff_id INT NOT NULL COMMENT 'Responsible Medical Staff ID',
+    institution_id INT NOT NULL COMMENT 'Institution ID',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NULL DEFAULT NULL,
     FOREIGN KEY (medical_staff_id) REFERENCES medical_staff(id) ON DELETE CASCADE,
@@ -51,51 +51,44 @@ CREATE TABLE testers (
     UNIQUE KEY uk_tester_id_institution (tester_id, institution_id)
 );
 
--- 测试结果表（先创建，因为test_records需要引用它）
+-- Test results table
 CREATE TABLE test_results (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    csv_file_path VARCHAR(500) NOT NULL COMMENT 'CSV文件路径',
-    theta_value DECIMAL(5,2) COMMENT 'Theta值',
-    alpha_value DECIMAL(5,2) COMMENT 'Alpha值',
-    beta_value DECIMAL(5,2) COMMENT 'Beta值',
-    result ENUM('睁眼', '闭眼') NOT NULL COMMENT '结果类型',
+    csv_file_path VARCHAR(500) NOT NULL COMMENT 'CSV File Path',
+    theta_value DECIMAL(5,2) COMMENT 'Theta Value',
+    alpha_value DECIMAL(5,2) COMMENT 'Alpha Value',
+    beta_value DECIMAL(5,2) COMMENT 'Beta Value',
+    result ENUM('Open Eyes', 'Closed Eyes') NOT NULL COMMENT 'Result Type',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 测试记录表
+-- Test records table
 CREATE TABLE test_records (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    tester_id INT NOT NULL COMMENT '测试者ID',
-    medical_staff_id INT NOT NULL COMMENT '医护人员ID',
-    institution_id INT NOT NULL COMMENT '机构ID',
-    test_start_time TIMESTAMP NULL DEFAULT NULL COMMENT '测试开始时间',
-    test_end_time TIMESTAMP NULL DEFAULT NULL COMMENT '测试结束时间',
-    test_status ENUM('进行中', '已完成', '已取消') DEFAULT '进行中' COMMENT '测试状态',
-    moca_score DECIMAL(5,2) COMMENT 'MoCA评分',
-    mmse_score DECIMAL(5,2) COMMENT 'MMSE评分',
-    grip_strength DECIMAL(8,2) COMMENT '握力值',
-    ad_risk_value DECIMAL(5,2) COMMENT 'AD风险值',
-    brain_age DECIMAL(5,2) COMMENT '大脑年龄',
-    open_eyes_result_id INT NULL COMMENT '睁眼测试结果ID',
-    closed_eyes_result_id INT NULL COMMENT '闭眼测试结果ID',
-    notes TEXT COMMENT '备注',
+    tester_id INT NOT NULL COMMENT 'Tester ID',
+    medical_staff_id INT NOT NULL COMMENT 'Medical Staff ID',
+    institution_id INT NOT NULL COMMENT 'Institution ID',
+    test_start_time TIMESTAMP NULL DEFAULT NULL COMMENT 'Test Start Time',
+    test_end_time TIMESTAMP NULL DEFAULT NULL COMMENT 'Test End Time',
+    test_status ENUM('In Progress', 'Completed', 'Cancelled') DEFAULT 'In Progress' COMMENT 'Test Status',
+    moca_score DECIMAL(5,2) COMMENT 'MoCA Score',
+    mmse_score DECIMAL(5,2) COMMENT 'MMSE Score',
+    grip_strength DECIMAL(8,2) COMMENT 'Grip Strength',
+    ad_risk_value DECIMAL(5,2) COMMENT 'AD Risk Value',
+    brain_age DECIMAL(5,2) COMMENT 'Brain Age',
+    open_eyes_result_id INT NULL COMMENT 'Open Eyes Result ID',
+    closed_eyes_result_id INT NULL COMMENT 'Closed Eyes Result ID',
+    notes TEXT COMMENT 'Notes',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NULL DEFAULT NULL,
     FOREIGN KEY (tester_id) REFERENCES testers(id) ON DELETE CASCADE,
     FOREIGN KEY (medical_staff_id) REFERENCES medical_staff(id) ON DELETE CASCADE,
-    FOREIGN KEY (institution_id) REFERENCES institutions(id) ON DELETE CASCADE
+    FOREIGN KEY (institution_id) REFERENCES institutions(id) ON DELETE CASCADE,
+    FOREIGN KEY (open_eyes_result_id) REFERENCES test_results(id) ON DELETE SET NULL,
+    FOREIGN KEY (closed_eyes_result_id) REFERENCES test_results(id) ON DELETE SET NULL
 );
 
--- 添加外键约束
-ALTER TABLE test_records 
-ADD CONSTRAINT fk_test_records_open_eyes_result 
-FOREIGN KEY (open_eyes_result_id) REFERENCES test_results(id) ON DELETE SET NULL;
-
-ALTER TABLE test_records 
-ADD CONSTRAINT fk_test_records_closed_eyes_result 
-FOREIGN KEY (closed_eyes_result_id) REFERENCES test_results(id) ON DELETE SET NULL;
-
--- 创建索引
+-- Create indexes
 CREATE INDEX idx_medical_staff_institution ON medical_staff(institution_id);
 CREATE INDEX idx_testers_medical_staff ON testers(medical_staff_id);
 CREATE INDEX idx_testers_institution ON testers(institution_id);

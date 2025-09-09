@@ -247,7 +247,7 @@
                 <h4>数据库架构（MySQL）</h4>
                 <ul>
                     <li><strong>数据库名</strong>: brain_mirror</li>
-                    <li><strong>表结构</strong>: 机构表、医护人员表、测试者表、测试记录表、测试结果表</li>
+                    <li><strong>表结构</strong>: 机构表、工作人员表、测试者表、测试记录表、测试结果表</li>
                     <li><strong>特性</strong>: 支持多机构多租户、数据关联完整性、外键约束</li>
                 </ul>
             </div>
@@ -262,10 +262,10 @@
             <li><strong>机构信息</strong>: 联系人、联系电话、机构地址管理</li>
         </ul>
 
-        <h3>2. 医护人员管理模块</h3>
+        <h3>2. 工作人员管理模块</h3>
         <ul>
-            <li><strong>医护人员注册</strong>: 工号、姓名、账号密码等信息录入</li>
-            <li><strong>医护人员登录</strong>: 多机构环境下账号唯一性验证</li>
+            <li><strong>工作人员注册</strong>: 工号、姓名、账号密码等信息录入</li>
+            <li><strong>工作人员登录</strong>: 多机构环境下账号唯一性验证</li>
             <li><strong>人员信息管理</strong>: 科室、职位、联系方式管理</li>
             <li><strong>权限控制</strong>: 基于机构的访问权限控制</li>
         </ul>
@@ -312,7 +312,7 @@
 │   │   └── audio/                        # 音频资源
 │   ├── Views/                            # UI界面层
 │   │   ├── InstitutionLoginWindow.xaml   # 机构登录界面
-│   │   ├── MedicalStaffWindow.xaml       # 医护人员操作界面
+│   │   ├── MedicalStaffWindow.xaml       # 工作人员操作界面
 │   │   ├── TesterInfoWindow.xaml         # 测试者信息录入
 │   │   ├── TestWindow.xaml               # 脑电波测试界面
 │   │   ├── ReportWindow.xaml             # 健康报告界面
@@ -481,9 +481,9 @@ private const string BaseUrl = "https://bm.miyinbot.com/api";
         <h3>认证接口</h3>
         <ul>
             <li><span class="api-endpoint">POST /api/auth/institution/login</span> - 机构登录</li>
-            <li><span class="api-endpoint">POST /api/auth/medical-staff/login</span> - 医护人员登录</li>
+            <li><span class="api-endpoint">POST /api/auth/medical-staff/login</span> - 工作人员登录</li>
             <li><span class="api-endpoint">POST /api/auth/institution/register</span> - 机构注册</li>
-            <li><span class="api-endpoint">POST /api/auth/medical-staff/register</span> - 医护人员注册</li>
+            <li><span class="api-endpoint">POST /api/auth/medical-staff/register</span> - 工作人员注册</li>
         </ul>
 
         <h3>测试者管理接口</h3>

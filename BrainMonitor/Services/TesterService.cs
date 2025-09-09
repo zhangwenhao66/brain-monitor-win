@@ -78,7 +78,7 @@ namespace BrainMirror.Services
         }
 
         /// <summary>
-        /// 获取指定医护人员的所有测试者
+        /// 获取指定工作人员的所有测试者
         /// </summary>
         public static async Task<List<TesterInfo>> GetAllTestersAsync(int medicalStaffId, int institutionId)
         {

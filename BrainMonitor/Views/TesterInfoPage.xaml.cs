@@ -51,10 +51,10 @@ namespace BrainMirror.Views
                     return;
                 }
 
-                // 检查是否已登录医护人员和机构
+                // 检查是否已登录工作人员和机构
                 if (GlobalMedicalStaffManager.CurrentLoggedInStaff == null)
                 {
-                    ModernMessageBoxWindow.Show("请先登录医护人员账号", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
+                    ModernMessageBoxWindow.Show("请先登录工作人员账号", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
                     return;
                 }
 
@@ -67,7 +67,7 @@ namespace BrainMirror.Views
                 // 获取性别选择
                 var selectedGender = (GenderComboBox.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "";
 
-                // 检查手机号是否在同一医护人员下已存在
+                // 检查手机号是否在同一工作人员下已存在
                 try
                 {
                     var existingTesters = await TesterService.GetAllTestersAsync(
@@ -80,7 +80,7 @@ namespace BrainMirror.Views
                         var phoneExists = existingTesters.Any(t => t.Phone == PhoneTextBox.Text.Trim());
                         if (phoneExists)
                         {
-                            ModernMessageBoxWindow.Show("该手机号在当前医护人员下已存在，请使用其他手机号", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
+                            ModernMessageBoxWindow.Show("该手机号在当前工作人员下已存在，请使用其他手机号", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
                             return;
                         }
                     }
@@ -113,7 +113,7 @@ namespace BrainMirror.Views
 
                 if (createdTester != null)
                 {
-                    // 创建成功，直接返回到医护人员操作页面，并设置需要刷新的标志
+                    // 创建成功，直接返回到工作人员操作页面，并设置需要刷新的标志
                     var medicalStaffPage = new MedicalStaffPage();
                     medicalStaffPage.SetRefreshFlag(true);
                     NavigationManager.NavigateTo(medicalStaffPage);
@@ -137,7 +137,7 @@ namespace BrainMirror.Views
 
         private void ReturnButton_Click(object sender, RoutedEventArgs e)
         {
-            // 返回到医护人员操作页面
+            // 返回到工作人员操作页面
             NavigationManager.NavigateTo(new MedicalStaffPage());
         }
 
@@ -149,7 +149,7 @@ namespace BrainMirror.Views
         {
             try
             {
-                // 获取当前医护人员的测试者列表
+                // 获取当前工作人员的测试者列表
                 var testers = await TesterService.GetAllTestersAsync(
                     GlobalMedicalStaffManager.CurrentLoggedInStaff.Id,
                     GlobalInstitutionManager.CurrentInstitutionDbId

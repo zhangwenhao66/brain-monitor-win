@@ -77,33 +77,6 @@
                 </StackPanel>
             </Border>
 
-            <!-- 大脑年龄卡片 -->
-            <Border Style="{StaticResource CardStyle}" Grid.Column="1" Margin="10,0,0,0">
-                <StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
-                        <Ellipse Width="20" Height="20" Fill="#2196F3" Margin="0,0,8,0">
-                            <Ellipse.Effect>
-                                <DropShadowEffect Color="Black" ShadowDepth="1" Opacity="0.3" />
-                            </Ellipse.Effect>
-                        </Ellipse>
-                        <TextBlock Text="大脑年龄"
-                            FontSize="16"
-                            FontWeight="Bold" />
-                    </StackPanel>
-
-                    <TextBlock Text="45岁"
-                        FontSize="28"
-                        FontWeight="Bold"
-                        Foreground="#2196F3"
-                        HorizontalAlignment="Center"
-                        Margin="0,0,0,8" />
-
-                    <TextBlock Text="高于实际年龄5岁"
-                        FontSize="12"
-                        Foreground="#666666"
-                        HorizontalAlignment="Center" />
-                </StackPanel>
-            </Border>
         </Grid>
 
         <!-- 脑电波图和解读 -->

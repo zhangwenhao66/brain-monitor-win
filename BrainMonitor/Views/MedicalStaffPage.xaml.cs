@@ -70,7 +70,7 @@ namespace BrainMirror.Views
         {
             try
             {
-                // 检查是否已登录医护人员和机构
+                // 检查是否已登录工作人员和机构
                 if (GlobalMedicalStaffManager.CurrentLoggedInStaff == null || GlobalInstitutionManager.CurrentInstitutionDbId <= 0)
                 {
                     TesterDataGrid.ItemsSource = new List<TesterInfo>();
@@ -122,7 +122,7 @@ namespace BrainMirror.Views
             // 检查是否已登录
             if (GlobalMedicalStaffManager.CurrentLoggedInStaff == null)
             {
-                ModernMessageBoxWindow.Show("请先登录医护人员账号", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
+                ModernMessageBoxWindow.Show("请先登录工作人员账号", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
                 return;
             }
 
@@ -192,7 +192,7 @@ namespace BrainMirror.Views
             // 检查是否已登录
             if (GlobalMedicalStaffManager.CurrentLoggedInStaff == null)
             {
-                ModernMessageBoxWindow.Show("请先登录医护人员账号", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
+                ModernMessageBoxWindow.Show("请先登录工作人员账号", "提示", ModernMessageBoxWindow.MessageBoxType.Warning);
                 return;
             }
 
@@ -280,7 +280,7 @@ namespace BrainMirror.Views
             NavigationManager.NavigateTo(new TestHistoryPage(selectedTester));
         }
 
-        // 医护人员相关方法
+        // 工作人员相关方法
         private void UpdateStaffInfo()
         {
             if (GlobalMedicalStaffManager.CurrentLoggedInStaff != null)
@@ -324,7 +324,7 @@ namespace BrainMirror.Views
         // 注册/登录按钮事件处理
         private void StaffLoginRegisterButton_Click(object sender, RoutedEventArgs e)
         {
-            // 导航到医护人员登录页面
+            // 导航到工作人员登录页面
             NavigationManager.NavigateTo(new StaffLoginPage());
         }
 
@@ -337,7 +337,7 @@ namespace BrainMirror.Views
 
         private void InstitutionLogoutButton_Click(object sender, RoutedEventArgs e)
         {
-            // 退出机构登录时，同时退出医护人员登录
+            // 退出机构登录时，同时退出工作人员登录
             GlobalMedicalStaffManager.Logout();
             
             // 清除机构信息

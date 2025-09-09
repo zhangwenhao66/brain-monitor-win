@@ -137,7 +137,6 @@
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="测试时间" Binding="{Binding TestStartTime, Converter={StaticResource DateTimeConverter}}" Width="200" />
                         <DataGridTextColumn Header="AD风险值" Binding="{Binding AdRiskValue, StringFormat={}{0:F2}}" Width="100" />
-                        <DataGridTextColumn Header="大脑年龄" Binding="{Binding BrainAge, StringFormat={}{0:F1}}" Width="100" />
                         <DataGridTextColumn Header="MoCA评分" Binding="{Binding MocaScore, StringFormat={}{0:F1}}" Width="100" />
                         <DataGridTextColumn Header="MMSE评分" Binding="{Binding MmseScore, StringFormat={}{0:F1}}" Width="100" />
                         <DataGridTextColumn Header="握力值" Binding="{Binding GripStrength, StringFormat={}{0:F1}}" Width="100" />

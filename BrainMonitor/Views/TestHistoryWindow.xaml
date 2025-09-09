@@ -135,7 +135,7 @@
                         <DataGridTextColumn Header="测试日期" Binding="{Binding TestDate, StringFormat=yyyy-MM-dd HH:mm}" Width="120" />
                         <DataGridTextColumn Header="测试时长" Binding="{Binding TestDuration, StringFormat={}{0}秒}" Width="100" />
                         <DataGridTextColumn Header="测试结果" Binding="{Binding TestResult}" Width="120" />
-                        <DataGridTextColumn Header="医护人员" Binding="{Binding StaffName}" Width="100" />
+                        <DataGridTextColumn Header="工作人员" Binding="{Binding StaffName}" Width="100" />
                         <DataGridTextColumn Header="机构" Binding="{Binding InstitutionName}" Width="120" />
                         <DataGridTextColumn Header="备注" Binding="{Binding Notes}" Width="*" />
                     </DataGrid.Columns>

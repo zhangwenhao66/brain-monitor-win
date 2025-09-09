@@ -55,7 +55,7 @@ router.post('/upload', authenticateToken, upload.single('csvFile'), async (req, 
         if (typeof institutionId !== 'string' || typeof staffName !== 'string' || typeof testerName !== 'string') {
             return res.status(400).json({
                 success: false,
-                message: '机构ID、医护人员姓名和测试者姓名必须是字符串'
+                message: '机构ID、工作人员姓名和测试者姓名必须是字符串'
             });
         }
 
@@ -66,6 +66,9 @@ router.post('/upload', authenticateToken, upload.single('csvFile'), async (req, 
                 message: '数据类型必须是"睁眼"或"闭眼"'
             });
         }
+        
+        // 将中文数据类型转换为数据库ENUM值
+        const dbDataType = dataType === '睁眼' ? 'Open Eyes' : 'Closed Eyes';
 
         // 文件上传权限验证 - 只需要验证用户身份
 
@@ -97,7 +100,7 @@ router.post('/upload', authenticateToken, upload.single('csvFile'), async (req, 
             VALUES (?, ?, NOW())
         `;
 
-        const testResultResult = await query(testResultSql, [relativePath, dataType]);
+        const testResultResult = await query(testResultSql, [relativePath, dbDataType]);
         const testResultId = testResultResult.insertId;
 
         res.json({

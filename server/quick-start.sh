@@ -45,7 +45,7 @@ echo "✅ 数据库初始化完成"
 # 启动服务
 echo
 echo "🌐 启动后端服务..."
-echo "服务将在 http://localhost:3000 启动"
+echo "服务将在 http://localhost:3000/api 启动"
 echo "按 Ctrl+C 停止服务"
 echo
 npm start
