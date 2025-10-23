@@ -28,26 +28,28 @@ const storage = multer.diskStorage({
 const upload = multer({ 
     storage: storage,
     fileFilter: function (req, file, cb) {
-        // 只允许CSV文件
-        if (file.mimetype === 'text/csv' || path.extname(file.originalname).toLowerCase() === '.csv') {
+        // 允许CSV和EDF文件
+        const ext = path.extname(file.originalname).toLowerCase();
+        if (file.mimetype === 'text/csv' || ext === '.csv' || 
+            file.mimetype === 'application/octet-stream' || ext === '.edf') {
             cb(null, true);
         } else {
-            cb(new Error('只允许上传CSV文件'));
+            cb(new Error('只允许上传CSV或EDF文件'));
         }
     }
 });
 
-// 上传脑电波数据CSV文件
-router.post('/upload', authenticateToken, upload.single('csvFile'), async (req, res) => {
+// 上传脑电波数据文件（CSV或EDF）
+router.post('/upload', authenticateToken, upload.any(), async (req, res) => {
     try {
-                const { dataType, institutionId, staffName, testerName } = req.body;
-        const csvFile = req.file;
+        const { dataType, institutionId, staffName, testerName } = req.body;
+        const uploadedFile = req.files && req.files[0]; // 获取第一个上传的文件
         
         // 验证必填字段
-        if (!dataType || !csvFile || !institutionId || !staffName || !testerName) {
+        if (!dataType || !uploadedFile || !institutionId || !staffName || !testerName) {
             return res.status(400).json({
                 success: false,
-                message: '请提供数据类型、CSV文件和相关信息'
+                message: '请提供数据类型、文件和相关信息'
             });
         }
         
@@ -72,10 +74,14 @@ router.post('/upload', authenticateToken, upload.single('csvFile'), async (req, 
 
         // 文件上传权限验证 - 只需要验证用户身份
 
+        // 确定文件类型和扩展名
+        const fileExt = path.extname(uploadedFile.originalname).toLowerCase();
+        const isEDF = fileExt === '.edf';
+        
         // 构建最终文件路径 - 使用北京时间
         const beijingTime = new Date(new Date().getTime() + (8 * 60 * 60 * 1000)); // UTC+8
         const timestamp = beijingTime.toISOString().replace(/[:.]/g, '-').slice(0, 19);
-        const fileName = `${timestamp}_${dataType}.csv`;
+        const fileName = `${timestamp}_${dataType}${fileExt}`;
         const finalDir = path.join(__dirname, '..', 'data', institutionId, staffName, testerName);
         const finalPath = path.join(finalDir, fileName);
         const relativePath = path.join(institutionId, staffName, testerName, fileName);
@@ -88,29 +94,34 @@ router.post('/upload', authenticateToken, upload.single('csvFile'), async (req, 
         }
 
         // 将文件从临时位置移动到最终位置
-        fs.copyFileSync(csvFile.path, finalPath);
+        fs.copyFileSync(uploadedFile.path, finalPath);
 
         // 删除临时文件
-        fs.unlinkSync(csvFile.path);
+        fs.unlinkSync(uploadedFile.path);
 
-        // 直接创建测试结果记录
-        const testResultSql = `
-            INSERT INTO test_results 
-            (csv_file_path, result, created_at) 
-            VALUES (?, ?, NOW())
-        `;
-
-        const testResultResult = await query(testResultSql, [relativePath, dbDataType]);
-        const testResultId = testResultResult.insertId;
+        let testResultId = null;
+        
+        // 只有CSV文件才创建数据库记录
+        if (!isEDF) {
+            // CSV文件存储到csv_file_path字段并创建测试结果记录
+            const testResultSql = `
+                INSERT INTO test_results 
+                (csv_file_path, result, created_at) 
+                VALUES (?, ?, NOW())
+            `;
+            const testResultResult = await query(testResultSql, [relativePath, dbDataType]);
+            testResultId = testResultResult.insertId;
+        }
 
         res.json({
             success: true,
-            message: '成功上传脑电波数据CSV文件',
+            message: `成功上传脑电波数据${isEDF ? 'EDF' : 'CSV'}文件`,
             data: {
-                testResultId,
+                testResultId: isEDF ? null : testResultId,
                 dataType,
-                csvFilePath: relativePath,
-                fileName: csvFile.filename
+                filePath: relativePath,
+                fileName: uploadedFile.filename,
+                fileType: isEDF ? 'edf' : 'csv'
             }
         });
 
@@ -118,10 +129,10 @@ router.post('/upload', authenticateToken, upload.single('csvFile'), async (req, 
         console.error('上传脑电波数据错误:', error);
         
         // 如果是文件上传错误，返回相应的错误信息
-        if (error.message === '只允许上传CSV文件') {
+        if (error.message === '只允许上传CSV或EDF文件') {
             return res.status(400).json({
                 success: false,
-                message: '只允许上传CSV文件'
+                message: '只允许上传CSV或EDF文件'
             });
         }
         

@@ -9,7 +9,7 @@ namespace BrainMirror
         /// <summary>
         /// 应用程序版本号
         /// </summary>
-        public static string Version => "1.1";
+        public static string Version => "1.2";
 
         protected override void OnStartup(StartupEventArgs e)
         {

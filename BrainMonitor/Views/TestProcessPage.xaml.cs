@@ -379,14 +379,22 @@ namespace BrainMirror.Views
                 TimeZoneInfo beijingTimeZone = TimeZoneInfo.FindSystemTimeZoneById("China Standard Time");
                 DateTime beijingTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, beijingTimeZone);
                 string timestamp = beijingTime.ToString("yyyyMMdd_HHmmss");
-                string fileName = $"{timestamp}_{currentTestType}.csv";
-                string filePath = Path.Combine(testerDir, fileName);
                 
-                // 写入CSV文件
-                File.WriteAllLines(filePath, currentTestData, Encoding.UTF8);
+                // 保存CSV文件
+                string csvFileName = $"{timestamp}_{currentTestType}.csv";
+                string csvFilePath = Path.Combine(testerDir, csvFileName);
+                File.WriteAllLines(csvFilePath, currentTestData, Encoding.UTF8);
                 
-                // 上传文件到后端服务器
-                await UploadFileToServer(filePath, fileName, institutionId, staffName, testerName);
+                // 保存EDF文件
+                string edfFileName = $"{timestamp}_{currentTestType}.edf";
+                string edfFilePath = Path.Combine(testerDir, edfFileName);
+                await SaveDataToEDFFile(edfFilePath, testerName, $"{currentTestType}_Test_{timestamp}");
+                
+                // 上传CSV文件到后端服务器
+                await UploadFileToServer(csvFilePath, csvFileName, institutionId, staffName, testerName);
+                
+                // 上传EDF文件到后端服务器
+                await UploadFileToServer(edfFilePath, edfFileName, institutionId, staffName, testerName);
             }
             catch (Exception ex)
             {
@@ -394,6 +402,46 @@ namespace BrainMirror.Views
                 {
                     ModernMessageBoxWindow.Show($"保存数据失败: {ex.Message}", "错误", ModernMessageBoxWindow.MessageBoxType.Error);
                 });
+            }
+        }
+        
+        // 保存数据到EDF文件
+        private async Task SaveDataToEDFFile(string filePath, string patientId, string recordingId)
+        {
+            try
+            {
+                // 将字符串数据转换为double数组
+                var rawData = new List<double>();
+                foreach (var dataPoint in currentTestData)
+                {
+                    if (double.TryParse(dataPoint, out double value))
+                    {
+                        rawData.Add(value);
+                    }
+                }
+                
+                if (rawData.Count == 0)
+                {
+                    return; // 没有有效数据，跳过EDF文件创建
+                }
+                
+                // 创建EDF写入器
+                using (var edfWriter = new BrainMirror.Services.EDFWriter(filePath, patientId, recordingId))
+                {
+                    // 写入所有数据样本
+                    foreach (double sample in rawData)
+                    {
+                        edfWriter.AddSample(sample);
+                    }
+                    
+                    // 完成EDF文件写入
+                    edfWriter.Finish();
+                }
+            }
+            catch (Exception ex)
+            {
+                // 静默处理EDF文件创建异常，避免影响主流程
+                System.Diagnostics.Debug.WriteLine($"EDF文件创建失败: {ex.Message}");
             }
         }
         
@@ -436,8 +484,24 @@ namespace BrainMirror.Views
                         // 读取文件内容到字节数组，避免流关闭问题
                         byte[] fileBytes = File.ReadAllBytes(filePath);
                         var fileContent = new System.Net.Http.ByteArrayContent(fileBytes);
-                        fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/csv");
-                        formData.Add(fileContent, "csvFile", fileName);
+                        
+                        // 根据文件类型设置正确的Content-Type和参数名
+                        if (fileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+                        {
+                            fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("text/csv");
+                            formData.Add(fileContent, "csvFile", fileName);
+                        }
+                        else if (fileName.EndsWith(".edf", StringComparison.OrdinalIgnoreCase))
+                        {
+                            fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+                            formData.Add(fileContent, "edfFile", fileName);
+                        }
+                        else
+                        {
+                            // 默认处理
+                            fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+                            formData.Add(fileContent, "file", fileName);
+                        }
                         
                         // 添加其他参数
                         formData.Add(new System.Net.Http.StringContent(currentTestType), "dataType");
@@ -446,7 +510,8 @@ namespace BrainMirror.Views
                         formData.Add(new System.Net.Http.StringContent(testerName), "testerName");
                         
                         // 发送请求
-                        var response = await httpClient.PostAsync($"{ConfigHelper.GetApiBaseUrl()}/brainwave-data/upload", formData);
+                        string uploadUrl = $"{ConfigHelper.GetApiBaseUrl()}/brainwave-data/upload";
+                        var response = await httpClient.PostAsync(uploadUrl, formData);
                         
                         if (response.IsSuccessStatusCode)
                         {
@@ -458,20 +523,21 @@ namespace BrainMirror.Views
                                 var responseData = System.Text.Json.JsonSerializer.Deserialize<UploadResponse>(responseContent);
                                 if (responseData.data != null)
                                 {
-                                    // 根据数据类型存储测试结果ID
-                                    if (currentTestType == "睁眼")
+                                    // 只有CSV文件才有testResultId，EDF文件的testResultId为null
+                                    if (responseData.data.testResultId.HasValue && responseData.data.testResultId.Value > 0)
                                     {
-                                        openEyesResultId = responseData.data.testResultId;
-                                    }
-                                    else if (currentTestType == "闭眼")
-                                    {
-                                        closedEyesResultId = responseData.data.testResultId;
-                                    }
-                                    
-                                    // 更新test_results表中的Theta、Alpha、Beta值（睁眼和闭眼都需要）
-                                    if (responseData.data.testResultId > 0)
-                                    {
-                                        await UpdateTestResultWithBrainwaveData(responseData.data.testResultId);
+                                        // 根据数据类型存储测试结果ID
+                                        if (currentTestType == "睁眼")
+                                        {
+                                            openEyesResultId = responseData.data.testResultId.Value;
+                                        }
+                                        else if (currentTestType == "闭眼")
+                                        {
+                                            closedEyesResultId = responseData.data.testResultId.Value;
+                                        }
+                                        
+                                        // 更新test_results表中的Theta、Alpha、Beta值（只有CSV文件需要）
+                                        await UpdateTestResultWithBrainwaveData(responseData.data.testResultId.Value);
                                     }
                                 }
                             }

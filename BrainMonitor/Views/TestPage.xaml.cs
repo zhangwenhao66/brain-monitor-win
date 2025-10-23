@@ -13,6 +13,8 @@ using System.IO.Ports;
 using BrainMirror.Models;
 using System.Text.Json;
 using BrainMirror.Configuration;
+using BrainMirror.Services;
+using System.IO;
 
 namespace BrainMirror.Views
 {
@@ -73,6 +75,12 @@ namespace BrainMirror.Views
         private DispatcherTimer zeroDataTimer; // 显示0值数据的定时器
         private bool isShowingZeroData = false; // 是否正在显示0值数据
         
+        // EDF实时数据保存相关变量
+        private EDFWriter edfWriter;
+        private bool isEDFRecording = false;
+        private string edfFilePath;
+        private DateTime edfRecordingStartTime;
+        
         private void InitializeDisplayTimer()
         {
             displayTimer = new DispatcherTimer();
@@ -93,7 +101,7 @@ namespace BrainMirror.Views
             lock (bufferLock)
             {
                 // 限制每次处理的数据包数量，避免UI阻塞
-                int maxPacketsPerTick = 5;
+                int maxPacketsPerTick = 10; // 增加处理数量，减少数据积压
                 int processedCount = 0;
                 
                 while (dataBuffer.Count > 0 && processedCount < maxPacketsPerTick)
@@ -534,7 +542,7 @@ namespace BrainMirror.Views
                     dataBuffer.Enqueue(rawData);
                     
                     // 限制缓冲队列大小，避免内存溢出
-                    while (dataBuffer.Count > 100)
+                    while (dataBuffer.Count > 200) // 增加缓冲区大小，减少数据丢失
                     {
                         dataBuffer.Dequeue();
                     }
@@ -546,6 +554,25 @@ namespace BrainMirror.Views
                     // 将int数组转换为double数组并存储
                     double[] doubleData = Array.ConvertAll(rawData, x => (double)x);
                     GlobalBrainwaveDataManager.AddBrainwaveDataRange(doubleData);
+                    
+                    // 实时保存到EDF文件（异步执行，避免阻塞UI）
+                    if (isEDFRecording && edfWriter != null)
+                    {
+                        Task.Run(() =>
+                        {
+                            try
+                            {
+                                foreach (double sample in doubleData)
+                                {
+                                    edfWriter.AddSample(sample);
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                System.Diagnostics.Debug.WriteLine($"EDF写入异常: {ex.Message}");
+                            }
+                        });
+                    }
                 }
             }
             catch (Exception ex)
@@ -624,16 +651,21 @@ namespace BrainMirror.Views
             {
                 if (element is FrameworkElement fe && fe.Tag?.ToString() == "waveform")
                 {
-                    if (element is Line line && Canvas.GetLeft(line) + line.X2 > lastX - moveDistance)
+                    if (element is Line line)
                     {
-                        lastX = line.X2;
-                        lastY = line.Y2;
-                        hasLastPoint = true;
+                        // 使用X1和X2中较大的值作为位置参考
+                        double lineX = Math.Max(line.X1, line.X2);
+                        if (lineX > lastX)
+                        {
+                            lastX = lineX;
+                            lastY = line.Y2;
+                            hasLastPoint = true;
+                        }
                     }
                     else if (element is Ellipse ellipse)
                     {
                         double ellipseX = Canvas.GetLeft(ellipse) + ellipse.Width / 2;
-                        if (ellipseX > lastX - moveDistance)
+                        if (ellipseX > lastX)
                         {
                             lastX = ellipseX;
                             lastY = Canvas.GetTop(ellipse) + ellipse.Height / 2;
@@ -800,6 +832,9 @@ namespace BrainMirror.Views
                 {
                     // 停止数据采集
                     BrainMonitorSDK.SDK_StopDataCollection();
+                    
+                    // 停止EDF实时数据记录
+                    StopEDFRecording();
                     
                     // 断开所有设备
                     foreach (var device in connectedDevices)
@@ -2040,6 +2075,9 @@ namespace BrainMirror.Views
                 // 先停止数据采集
                 BrainMonitorSDK.SDK_StopDataCollection();
                 
+                // 停止EDF实时数据记录
+                StopEDFRecording();
+                
                 // 断开所有已连接的设备
                 foreach (var device in connectedDevices.ToList())
                 {
@@ -2254,6 +2292,9 @@ namespace BrainMirror.Views
                 if (result == 1)
                 {
                     // 数据采集成功启动，数据将通过回调函数接收
+                    
+                    // 开始EDF实时数据记录
+                    StartEDFRecording();
                     // 启动显示定时器
                     displayTimer?.Start();
                 }
@@ -3071,6 +3112,77 @@ namespace BrainMirror.Views
                 System.Diagnostics.Debug.WriteLine($"解析JSON属性 {propertyName} 失败: {ex.Message}");
                 return default(T);
             }
+        }
+        
+        /// <summary>
+        /// 开始EDF实时数据记录
+        /// </summary>
+        private void StartEDFRecording()
+        {
+            try
+            {
+                // 获取机构ID、工作人员姓名、测试者姓名
+                string institutionId = GetCurrentInstitutionId();
+                string staffName = GetCurrentStaffName();
+                string testerName = GetCurrentTesterName();
+                
+                // 创建目录（与睁眼数据和闭眼数据的保存路径一样）
+                string baseDir = "data";
+                string institutionDir = System.IO.Path.Combine(baseDir, institutionId);
+                string staffDir = System.IO.Path.Combine(institutionDir, staffName);
+                string testerDir = System.IO.Path.Combine(staffDir, testerName);
+                
+                Directory.CreateDirectory(testerDir);
+                
+                // 生成文件名 - 使用北京时间，文件名为开始保存文件的时间
+                TimeZoneInfo beijingTimeZone = TimeZoneInfo.FindSystemTimeZoneById("China Standard Time");
+                DateTime beijingTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, beijingTimeZone);
+                string timestamp = beijingTime.ToString("yyyyMMdd_HHmmss");
+                string fileName = $"{timestamp}.edf";
+                edfFilePath = System.IO.Path.Combine(testerDir, fileName);
+                
+                // 创建EDF写入器
+                edfWriter = new EDFWriter(edfFilePath, testerName, $"Brainwave_Recording_{timestamp}");
+                edfRecordingStartTime = DateTime.Now;
+                isEDFRecording = true;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"开始EDF记录失败: {ex.Message}");
+                isEDFRecording = false;
+            }
+        }
+        
+        /// <summary>
+        /// 停止EDF实时数据记录
+        /// </summary>
+        private void StopEDFRecording()
+        {
+            try
+            {
+                if (isEDFRecording && edfWriter != null)
+                {
+                    // 完成EDF文件写入
+                    edfWriter.Finish();
+                    edfWriter.Dispose();
+                    edfWriter = null;
+                    isEDFRecording = false;
+                    
+                    System.Diagnostics.Debug.WriteLine($"EDF实时数据记录已停止: {edfFilePath}");
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"停止EDF记录失败: {ex.Message}");
+            }
+        }
+        
+        /// <summary>
+        /// 获取当前测试者姓名
+        /// </summary>
+        private string GetCurrentTesterName()
+        {
+            return CurrentTester?.Name ?? "未知测试者";
         }
     }
 }

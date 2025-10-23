@@ -13,11 +13,13 @@ namespace BrainMirror.Models
     
     public class UploadData
     {
-        public int testResultId { get; set; }
+        public int? testResultId { get; set; }
         public int brainwaveDataId { get; set; }
         public string? dataType { get; set; }
         public string? csvFilePath { get; set; }
         public string? fileName { get; set; }
+        public string? filePath { get; set; }
+        public string? fileType { get; set; }
     }
     
     // 测试结果事件参数类
