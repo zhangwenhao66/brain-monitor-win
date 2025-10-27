@@ -53,6 +53,12 @@ namespace BrainMirror.Views
         // 脑电数据处理器
         private BrainwaveDataProcessor brainwaveProcessor;
         
+        // 数据统计
+        private int totalDataPointsReceived = 0;
+        private DateTime lastDataReceiveTime = DateTime.MinValue;
+        private int dataPointsInLastSecond = 0;
+        private DateTime lastSecondStart = DateTime.MinValue;
+        
         // 测试流程步骤 - 现在有8个步骤
         private readonly string[] instructions = new string[]
         {
@@ -167,9 +173,9 @@ namespace BrainMirror.Views
             audioWaitTimer.Interval = TimeSpan.FromSeconds(1); // 等待1秒
             audioWaitTimer.Tick += AudioWaitTimer_Tick;
             
-            // 数据记录定时器
+            // 数据记录定时器 - 使用更短的间隔以捕获高频数据
             dataRecordTimer = new DispatcherTimer();
-            dataRecordTimer.Interval = TimeSpan.FromMilliseconds(100); // 每100ms记录一次数据
+            dataRecordTimer.Interval = TimeSpan.FromMilliseconds(10); // 每10ms采集一次，确保捕获所有设备数据
             dataRecordTimer.Tick += DataRecordTimer_Tick;
         }
 
@@ -292,6 +298,12 @@ namespace BrainMirror.Views
             isRecordingData = true;
             dataRecordTimer.Start();
             
+            // 初始化数据统计
+            totalDataPointsReceived = 0;
+            lastDataReceiveTime = DateTime.Now;
+            dataPointsInLastSecond = 0;
+            lastSecondStart = DateTime.Now;
+            
             // 如果是闭眼测试，清空闭眼数据存储
             if (currentStep == 6) // 闭眼测试步骤
             {
@@ -311,24 +323,49 @@ namespace BrainMirror.Views
             await SaveDataToFile();
         }
         
-        // 数据记录定时器事件
+        // 数据记录定时器事件 - 改为批量获取数据
         private void DataRecordTimer_Tick(object sender, EventArgs e)
         {
             if (isRecordingData)
             {
-                // 从实际设备获取脑电波数据
-                double brainwaveData = GetActualDeviceData();
-                if (brainwaveData != double.MinValue) // 检查是否获取到有效数据
+                // 从全局数据管理器批量获取所有待处理的数据
+                if (GlobalBrainwaveDataManager.HasData())
                 {
-                    currentTestData.Add(brainwaveData.ToString("F2"));
+                    var allData = GlobalBrainwaveDataManager.GetAllLatestBrainwaveData();
+                    int newDataCount = 0;
                     
-                    // 如果是闭眼测试，同时存储到闭眼数据中
-                    if (currentStep == 6) // 闭眼测试步骤
+                    // 直接保存所有数据，不进行重复检测
+                    // 因为设备数据流是连续的，相同数值可能是不同的采样时间点
+                    foreach (var data in allData)
                     {
-                        closedEyesRawData.Add(brainwaveData);
+                        if (data != double.MinValue)
+                        {
+                            currentTestData.Add(data.ToString("F2"));
+                            newDataCount++;
+                            
+                            // 如果是闭眼测试，同时存储到闭眼数据中
+                            if (currentStep == 6) // 闭眼测试步骤
+                            {
+                                closedEyesRawData.Add(data);
+                            }
+                        }
                     }
+                    
+                    // 统计数据
+                    totalDataPointsReceived += newDataCount;
+                    dataPointsInLastSecond += newDataCount;
+                    
+                    // 更新统计
+                    DateTime now = DateTime.Now;
+                    if ((now - lastSecondStart).TotalSeconds >= 1.0)
+                    {
+                        dataPointsInLastSecond = 0;
+                        lastSecondStart = now;
+                    }
+                    
+                    // 清空全局数据管理器
+                    GlobalBrainwaveDataManager.ClearData();
                 }
-                // 如果没有获取到有效数据，不记录任何内容，等待下一次数据
             }
         }
         
@@ -337,7 +374,7 @@ namespace BrainMirror.Views
         {
             try
             {
-                // 从全局数据管理器获取最新的脑电波数据
+                // 从全局数据管理器获取最新的脑电波数据（仅返回最新值，不处理队列）
                 if (GlobalBrainwaveDataManager.HasData())
                 {
                     double latestData = GlobalBrainwaveDataManager.GetLatestBrainwaveData();
@@ -441,7 +478,6 @@ namespace BrainMirror.Views
             catch (Exception ex)
             {
                 // 静默处理EDF文件创建异常，避免影响主流程
-                System.Diagnostics.Debug.WriteLine($"EDF文件创建失败: {ex.Message}");
             }
         }
         

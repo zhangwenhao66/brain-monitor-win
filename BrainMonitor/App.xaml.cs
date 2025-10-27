@@ -7,9 +7,9 @@ namespace BrainMirror
     public partial class App : Application
     {
         /// <summary>
-        /// 应用程序版本号
+        /// 应用程序版本号（从程序集自动获取）
         /// </summary>
-        public static string Version => "1.2";
+        public static string Version => typeof(App).Assembly.GetName().Version?.ToString(3) ?? "1.2";
 
         protected override void OnStartup(StartupEventArgs e)
         {

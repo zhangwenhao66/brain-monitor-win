@@ -1,6 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <!-- 版本号统一配置 - 只需要修改这里 -->
+    <VersionMajor>1</VersionMajor>
+    <VersionMinor>3</VersionMinor>
+    <VersionPatch>0</VersionPatch>
+    <VersionBuild>0</VersionBuild>
+    <ProductVersion>$(VersionMajor).$(VersionMinor).$(VersionPatch)</ProductVersion>
+    <AssemblyVersion>$(VersionMajor).$(VersionMinor).$(VersionPatch).$(VersionBuild)</AssemblyVersion>
+    <FileVersion>$(VersionMajor).$(VersionMinor).$(VersionPatch).$(VersionBuild)</FileVersion>
+  </PropertyGroup>
+  
+  <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
@@ -10,9 +21,6 @@
     <AssemblyTitle>脑镜BrainMirror</AssemblyTitle>
     <AssemblyProduct>脑镜BrainMirror</AssemblyProduct>
     <AssemblyDescription>脑电波监测系统</AssemblyDescription>
-    <AssemblyVersion>1.2.0.0</AssemblyVersion>
-    <FileVersion>1.2.0.0</FileVersion>
-    <ProductVersion>1.2.0</ProductVersion>
   </PropertyGroup>
 
   <ItemGroup>

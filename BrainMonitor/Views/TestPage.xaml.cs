@@ -3167,13 +3167,11 @@ namespace BrainMirror.Views
                     edfWriter.Dispose();
                     edfWriter = null;
                     isEDFRecording = false;
-                    
-                    System.Diagnostics.Debug.WriteLine($"EDF实时数据记录已停止: {edfFilePath}");
                 }
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"停止EDF记录失败: {ex.Message}");
+                // 静默处理
             }
         }
         

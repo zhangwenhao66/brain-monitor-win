@@ -8,6 +8,10 @@ namespace BrainMirror.Views
         public MainWindow()
         {
             InitializeComponent();
+            
+            // 设置动态版本号标题
+            this.Title = $"脑镜BrainMirror v{App.Version}";
+            
             // 初始化导航管理器
             NavigationManager.Initialize(this);
             // 默认显示机构登录页面

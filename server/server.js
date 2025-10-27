@@ -54,7 +54,7 @@ app.get('/health', (req, res) => {
         success: true,
         message: 'Brain Monitor Server is running',
         timestamp: new Date().toISOString(),
-        version: '1.2.0'
+        version: '1.3.0'
     });
 });
 
