@@ -11,9 +11,6 @@ router.post('/', authenticateToken, async (req, res) => {
         const { 
             testerId, 
             testerName, 
-            medicalStaffId, 
-            medicalStaffName, 
-            institutionId, 
             testDate, 
             mocaScore, 
             mmseScore, 
@@ -24,10 +21,22 @@ router.post('/', authenticateToken, async (req, res) => {
         } = req.body;
 
         // 验证必填字段
-        if (!testerId || !testerName || !medicalStaffId || !medicalStaffName || !institutionId) {
+        if (!testerId || !testerName) {
             return res.status(400).json({
                 success: false,
-                message: '测试者ID、姓名、工作人员ID、姓名和机构ID为必填字段'
+                message: '测试者ID和姓名为必填字段'
+            });
+        }
+        
+        // 使用认证中间件中的用户信息（当前登录的医护操作人员）
+        // 直接使用req.user.id，不需要查找或创建medical_staff
+        const currentStaffId = req.user.id;
+        const institutionDbId = req.user.institution_id;
+        
+        if (!currentStaffId || !institutionDbId) {
+            return res.status(400).json({
+                success: false,
+                message: '无法获取用户信息，请重新登录'
             });
         }
         
@@ -39,44 +48,23 @@ router.post('/', authenticateToken, async (req, res) => {
         };
         const dbTestStatus = testStatusMap[testStatus] || 'In Progress';
 
-        // 检查工作人员是否存在 - 使用数据库ID查询
-        let [existingStaff] = await query(
-            'SELECT id FROM medical_staff WHERE id = ? AND institution_id = ?',
-            [medicalStaffId, institutionId]
-        );
-
-        if (!existingStaff) {
-            console.log('工作人员不存在，创建新记录');
-            // 如果工作人员不存在，创建新记录
-            await query(
-                'INSERT INTO medical_staff (staff_id, name, account, password, institution_id, created_at) VALUES (?, ?, ?, ?, ?, NOW())',
-                [medicalStaffId.toString(), medicalStaffName, `staff_${medicalStaffId}`, '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.', institutionId]
-            );
-        }
-
-        // 获取工作人员的实际ID（可能是新插入的，也可能是已存在的）
-        let [currentStaff] = await query(
-            'SELECT id FROM medical_staff WHERE id = ? AND institution_id = ?',
-            [medicalStaffId, institutionId]
-        );
-
         // 首先检查测试者是否存在，如果不存在则创建
         let [existingTester] = await query(
             'SELECT id FROM testers WHERE tester_id = ? AND institution_id = ?',
-            [testerId, institutionId]
+            [testerId, institutionDbId]
         );
 
         if (!existingTester) {
             await query(
                 'INSERT INTO testers (tester_id, name, institution_id, medical_staff_id, created_at) VALUES (?, ?, ?, ?, NOW())',
-                [testerId, testerName, institutionId, currentStaff.id]
+                [testerId, testerName, institutionDbId, currentStaffId]
             );
         }
 
         // 获取测试者的数据库主键ID和基本信息
         let [currentTester] = await query(
             'SELECT id, age, gender FROM testers WHERE tester_id = ? AND institution_id = ?',
-            [testerId, institutionId]
+            [testerId, institutionDbId]
         );
 
         if (!currentTester) {
@@ -86,12 +74,12 @@ router.post('/', authenticateToken, async (req, res) => {
             });
         }
 
-        // 生成报告时创建测试记录 - 使用测试者表的主键ID
+        // 生成报告时创建测试记录 - 使用测试者表的主键ID和当前登录用户的ID
         const testRecordResult = await query(
             `INSERT INTO test_records
              (tester_id, medical_staff_id, institution_id, test_start_time, test_status, moca_score, mmse_score, grip_strength, open_eyes_result_id, closed_eyes_result_id, created_at)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-            [currentTester.id, currentStaff.id, institutionId, testDate, dbTestStatus, mocaScore, mmseScore, gripStrength, openEyesResultId, closedEyesResultId]
+            [currentTester.id, currentStaffId, institutionDbId, testDate, dbTestStatus, mocaScore, mmseScore, gripStrength, openEyesResultId, closedEyesResultId]
         );
 
         const testRecordId = testRecordResult.insertId;
@@ -210,9 +198,9 @@ router.post('/', authenticateToken, async (req, res) => {
                 testRecordId,
                 testerId,
                 testerName,
-                medicalStaffId,
-                medicalStaffName,
-                institutionId,
+                medicalStaffId: currentStaffId,
+                medicalStaffName: req.user.name,
+                institutionId: institutionDbId,
                 testDate,
                 testStatus: testStatus
             }

@@ -3,7 +3,7 @@
   <PropertyGroup>
     <!-- 版本号统一配置 - 只需要修改这里 -->
     <VersionMajor>1</VersionMajor>
-    <VersionMinor>3</VersionMinor>
+    <VersionMinor>4</VersionMinor>
     <VersionPatch>0</VersionPatch>
     <VersionBuild>0</VersionBuild>
     <ProductVersion>$(VersionMajor).$(VersionMinor).$(VersionPatch)</ProductVersion>
