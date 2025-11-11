@@ -65,6 +65,7 @@ CREATE TABLE test_results (
 -- Test records table
 CREATE TABLE test_records (
     id INT PRIMARY KEY AUTO_INCREMENT,
+    report_number VARCHAR(50) UNIQUE COMMENT 'Report Number',
     tester_id INT NOT NULL COMMENT 'Tester ID',
     medical_staff_id INT NOT NULL COMMENT 'Medical Staff ID',
     institution_id INT NOT NULL COMMENT 'Institution ID',

@@ -2656,6 +2656,7 @@ namespace BrainMirror.Views
                                     double? serverAlphaValue = null;
                                     double? serverBetaValue = null;
                                     DateTime? testRecordCreatedAt = null;
+                                    string? reportNumber = null;
                                     
                                     // 解析测试记录数据
                                     if (reportInfo.TryGetProperty("testRecord", out var testRecordElement))
@@ -2665,6 +2666,12 @@ namespace BrainMirror.Views
                                         serverMmseScore = ParseJsonValue<double?>(testRecord, "mmse_score");
                                         serverGripStrength = ParseJsonValue<double?>(testRecord, "grip_strength");
                                         serverAdRiskValue = ParseJsonValue<double?>(testRecord, "ad_risk_value");
+                                        
+                                        // 解析报告编号
+                                        if (testRecord.TryGetProperty("report_number", out var reportNumberElement))
+                                        {
+                                            reportNumber = reportNumberElement.GetString();
+                                        }
                                         
                                         // 解析创建时间
                                         if (testRecord.TryGetProperty("created_at", out var createdAtElement))
@@ -2693,11 +2700,11 @@ namespace BrainMirror.Views
                                     // 正确计算脑电最终指标：Theta值/3 + Alpha值/3 + Beta值/3
                                     double brainwaveFinalIndex = ((serverThetaValue ?? 0) + (serverAlphaValue ?? 0) + (serverBetaValue ?? 0)) / 3.0;
 
-                                    // 明确调用包含testRecordCreatedAt参数的构造函数
+                                    // 明确调用包含testRecordCreatedAt和reportNumber参数的构造函数
                                     var reportPage = new ReportPage(CurrentTester, serverMocaScore, serverMmseScore, serverGripStrength,
                                         serverThetaValue ?? 0, serverAlphaValue ?? 0, serverBetaValue ?? 0,
                                         brainwaveFinalIndex,
-                                        serverAdRiskValue ?? 0, testRecordCreatedAt, "Server");
+                                        serverAdRiskValue ?? 0, testRecordCreatedAt, reportNumber, "Server");
                                     NavigationManager.NavigateTo(reportPage);
                                     
                                     return;

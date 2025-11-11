@@ -15,16 +15,46 @@ namespace BrainMirror.Views
             Success
         }
 
+        public enum MessageBoxButtons
+        {
+            Ok,
+            YesNo
+        }
+
+        public enum MessageBoxResult
+        {
+            None,
+            Ok,
+            Yes,
+            No
+        }
+
+        public MessageBoxResult Result { get; private set; } = MessageBoxResult.None;
+
         public ModernMessageBoxWindow()
         {
             InitializeComponent();
         }
 
-        public void SetMessage(string message, string title = "提示", MessageBoxType type = MessageBoxType.Info)
+        public void SetMessage(string message, string title = "提示", MessageBoxType type = MessageBoxType.Info, MessageBoxButtons buttons = MessageBoxButtons.Ok)
         {
             MessageText.Text = message;
             TitleText.Text = title;
             Title = title;
+            
+            // 根据按钮类型显示/隐藏按钮
+            if (buttons == MessageBoxButtons.YesNo)
+            {
+                OkButton.Visibility = Visibility.Collapsed;
+                YesButton.Visibility = Visibility.Visible;
+                NoButton.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                OkButton.Visibility = Visibility.Visible;
+                YesButton.Visibility = Visibility.Collapsed;
+                NoButton.Visibility = Visibility.Collapsed;
+            }
             
             // 根据类型设置图标和颜色，并播放相应声音
             switch (type)
@@ -54,6 +84,19 @@ namespace BrainMirror.Views
 
         private void OkButton_Click(object sender, RoutedEventArgs e)
         {
+            Result = MessageBoxResult.Ok;
+            this.Close();
+        }
+
+        private void YesButton_Click(object sender, RoutedEventArgs e)
+        {
+            Result = MessageBoxResult.Yes;
+            this.Close();
+        }
+
+        private void NoButton_Click(object sender, RoutedEventArgs e)
+        {
+            Result = MessageBoxResult.No;
             this.Close();
         }
 
@@ -61,7 +104,7 @@ namespace BrainMirror.Views
         public static void Show(string message, string title = "提示", MessageBoxType type = MessageBoxType.Info)
         {
             var messageBox = new ModernMessageBoxWindow();
-            messageBox.SetMessage(message, title, type);
+            messageBox.SetMessage(message, title, type, MessageBoxButtons.Ok);
             
             // 设置父窗口
             if (Application.Current.MainWindow != null && Application.Current.MainWindow.IsVisible)
@@ -70,6 +113,22 @@ namespace BrainMirror.Views
             }
             
             messageBox.ShowDialog();
+        }
+
+        // 静态方法，支持返回结果
+        public static MessageBoxResult ShowDialog(string message, string title = "提示", MessageBoxType type = MessageBoxType.Info, MessageBoxButtons buttons = MessageBoxButtons.Ok)
+        {
+            var messageBox = new ModernMessageBoxWindow();
+            messageBox.SetMessage(message, title, type, buttons);
+            
+            // 设置父窗口
+            if (Application.Current.MainWindow != null && Application.Current.MainWindow.IsVisible)
+            {
+                messageBox.Owner = Application.Current.MainWindow;
+            }
+            
+            messageBox.ShowDialog();
+            return messageBox.Result;
         }
     }
 }

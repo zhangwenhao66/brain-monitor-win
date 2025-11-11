@@ -395,6 +395,9 @@ namespace BrainMirror.Services
         [JsonProperty("id")]
         public int Id { get; set; }
         
+        [JsonProperty("report_number")]
+        public string ReportNumber { get; set; } = string.Empty;
+        
         [JsonProperty("tester_id")]
         public string TesterId { get; set; } = string.Empty;
         
@@ -616,6 +619,9 @@ namespace BrainMirror.Services
     {
         [JsonProperty("id")]
         public int Id { get; set; }
+        
+        [JsonProperty("report_number")]
+        public string ReportNumber { get; set; } = string.Empty;
         
         [JsonProperty("tester_id")]
         public int TesterId { get; set; }

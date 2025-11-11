@@ -90,10 +90,10 @@ namespace BrainMirror.Views
         {
             3,  // 第一个指令显示3秒
             3,  // 第二个指令显示3秒
-            180,  // 第一次倒计时3分钟（睁眼测试）
+            10,  // 第一次倒计时3分钟（睁眼测试）
             3,  // 第四个指令显示3秒
             3,  // 第五个指令显示3秒
-            180,  // 第二次倒计时3分钟（闭眼测试）
+            10,  // 第二次倒计时3分钟（闭眼测试）
             3,  // 第七个指令显示3秒
             -1   // 最后一个指令一直显示
         };
@@ -203,7 +203,7 @@ namespace BrainMirror.Views
                 if (currentStep == 2 || currentStep == 6)
                 {
                     // 根据开发模式设置倒计时时间
-                    countdownSeconds = AppConfig.Instance.IsDevelopment() ? 5 : 180; // 开发模式5秒，生产模式3分钟
+                    countdownSeconds = AppConfig.Instance.IsDevelopment() ? 5 : 10; // 开发模式5秒，生产模式3分钟
                     isCountingDown = true;
                     
                     // 设置测试类型
@@ -945,7 +945,7 @@ namespace BrainMirror.Views
         private void ResetStepDuration(int step)
         {
             // 重置步骤持续时间到原始值
-            int[] originalDurations = AppConfig.Instance.IsDevelopment() ? devStepDurations : new int[] { 3, 3, 180, 3, 3, 180, 3, -1 };
+            int[] originalDurations = AppConfig.Instance.IsDevelopment() ? devStepDurations : new int[] { 3, 3, 10, 3, 3, 10, 3, -1 };
             if (step < originalDurations.Length)
             {
                 stepDurations[step] = originalDurations[step];

@@ -83,6 +83,19 @@ router.post('/', authenticateToken, async (req, res) => {
         );
 
         const testRecordId = testRecordResult.insertId;
+        
+        // 生成报告编号: RPT-YYYYMMDD-{ID} (ID不限位数，可无限扩展)
+        const now = new Date();
+        const dateStr = now.getFullYear().toString() + 
+                       (now.getMonth() + 1).toString().padStart(2, '0') + 
+                       now.getDate().toString().padStart(2, '0');
+        const reportNumber = `RPT-${dateStr}-${testRecordId}`;
+        
+        // 更新测试记录的报告编号
+        await query(
+            'UPDATE test_records SET report_number = ? WHERE id = ?',
+            [reportNumber, testRecordId]
+        );
 
         // 计算AD风险值
         let adRiskValue = 0;
@@ -261,6 +274,7 @@ router.post('/history', authenticateToken, async (req, res) => {
         const records = await query(
             `SELECT
                 tr.id,
+                tr.report_number,
                 tr.tester_id,
                 tr.medical_staff_id,
                 tr.institution_id,
@@ -369,6 +383,7 @@ router.get('/:recordId/report', authenticateToken, async (req, res) => {
         const [testRecord] = await query(
             `SELECT 
                 tr.id,
+                tr.report_number,
                 tr.tester_id,
                 tr.medical_staff_id,
                 tr.institution_id,

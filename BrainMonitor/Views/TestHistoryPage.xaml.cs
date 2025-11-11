@@ -160,13 +160,13 @@ namespace BrainMirror.Views
                                     double brainwaveIndex = (thetaValue + alphaValue + betaValue) / 3.0;
                                     double adRiskValue = testRecord.AdRiskValue ?? 0;
                                     
-                                    // 导航到报告页面，传递完整的测试数据
+                                    // 导航到报告页面，传递完整的测试数据（包括报告编号）
                                     NavigationManager.NavigateTo(new ReportPage(currentTester, 
                                         testRecord.MocaScore, 
                                         testRecord.MmseScore, 
                                         testRecord.GripStrength,
                                         thetaValue, alphaValue, betaValue, brainwaveIndex, adRiskValue, 
-                                        testRecord.CreatedAt, "TestHistoryPage"));
+                                        testRecord.CreatedAt, testRecord.ReportNumber, "TestHistoryPage"));
                                     return;
                                 }
                             }
