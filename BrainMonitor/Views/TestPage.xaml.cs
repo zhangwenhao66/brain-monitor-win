@@ -552,7 +552,8 @@ namespace BrainMirror.Views
                 if (rawData.Length > 0)
                 {
                     // 将int数组转换为double数组并存储
-                    double[] doubleData = Array.ConvertAll(rawData, x => (double)x);
+                    // 重要：将原始ADC数据转换为微伏值（ADC值 * 0.2 = 微伏值）
+                    double[] doubleData = Array.ConvertAll(rawData, x => (double)x * 0.2);
                     GlobalBrainwaveDataManager.AddBrainwaveDataRange(doubleData);
                     
                     // 实时保存到EDF文件（异步执行，避免阻塞UI）

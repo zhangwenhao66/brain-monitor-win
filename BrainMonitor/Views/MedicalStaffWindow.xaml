@@ -107,7 +107,7 @@
                     FontSize="15"
                     LineHeight="15"
                     Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
-                    Text="本系统是一套先进的脑电监测解决方案，专为医疗机构设计。通过高精度的脑电信号采集设备，实时监测患者的脑电活动，为工作人员提供准确的诊断依据。系统具有操作简便、数据可靠、分析精准等特点，能够有效辅助医生进行神经系统疾病的诊断和治疗。" />
+                    Text="本系统是一套用于脑健康检查与管理的解决方案。通过高质量的脑电信号采集与多维度评估，帮助用户了解个体脑活动与认知相关指标，并进行趋势跟踪与风险提示。本结果仅作健康参考，不用于医疗诊断。" />
 
                 <!-- <Grid Margin="0,25,0,0"> -->
                     <!-- <Grid.ColumnDefinitions> -->

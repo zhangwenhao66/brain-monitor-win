@@ -118,34 +118,105 @@ namespace BrainMirror.Services
         
         /// <summary>
         /// 应用带通滤波器（1-40Hz）
+        /// 使用4阶Butterworth带通滤波器，采样率520Hz
+        /// 实现为4个二阶段(biquad)级联 - SOS (Second-Order Sections)格式
         /// </summary>
         private List<double> ApplyBandpassFilter(List<double> data)
         {
-            // 使用简单的IIR带通滤波器
-            // 这里实现一个基本的双二阶滤波器
-            
-            var filteredData = new List<double>();
             if (data.Count < 3) return data;
             
-            // 滤波器系数（预计算的Butterworth双二阶滤波器）
-            double b0 = 0.0001, b1 = 0.0002, b2 = 0.0001;
-            double a1 = -1.9978, a2 = 0.9978;
+            var filteredData = new List<double>(data);
             
-            // 初始化状态变量
-            double x1 = 0, x2 = 0, y1 = 0, y2 = 0;
+            // Biquad Section 0 - 第一个二阶段
+            double b0_0 = 0.001782609991925;
+            double b0_1 = 0.003565219983851;
+            double b0_2 = 0.001782609991925;
+            double a0_1 = -1.268769021767374;
+            double a0_2 = 0.418579294751677;
             
-            foreach (double sample in data)
+            double x0_1 = 0, x0_2 = 0, y0_1 = 0, y0_2 = 0;
+            
+            for (int j = 0; j < filteredData.Count; j++)
             {
-                // 应用滤波器
-                double y = b0 * sample + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;
+                double x0 = filteredData[j];
+                double y0 = b0_0 * x0 + b0_1 * x0_1 + b0_2 * x0_2
+                             - a0_1 * y0_1 - a0_2 * y0_2;
                 
-                // 更新状态变量
-                x2 = x1;
-                x1 = sample;
-                y2 = y1;
-                y1 = y;
+                x0_2 = x0_1;
+                x0_1 = x0;
+                y0_2 = y0_1;
+                y0_1 = y0;
                 
-                filteredData.Add(y);
+                filteredData[j] = y0;
+            }
+            
+            // Biquad Section 1 - 第二个二阶段
+            double b1_0 = 1.000000000000000;
+            double b1_1 = 2.000000000000000;
+            double b1_2 = 1.000000000000000;
+            double a1_1 = -1.516807015980626;
+            double a1_2 = 0.710270188664497;
+            
+            double x1_1 = 0, x1_2 = 0, y1_1 = 0, y1_2 = 0;
+            
+            for (int j = 0; j < filteredData.Count; j++)
+            {
+                double x1 = filteredData[j];
+                double y1 = b1_0 * x1 + b1_1 * x1_1 + b1_2 * x1_2
+                             - a1_1 * y1_1 - a1_2 * y1_2;
+                
+                x1_2 = x1_1;
+                x1_1 = x1;
+                y1_2 = y1_1;
+                y1_1 = y1;
+                
+                filteredData[j] = y1;
+            }
+            
+            // Biquad Section 2 - 第三个二阶段
+            double b2_0 = 1.000000000000000;
+            double b2_1 = -2.000000000000000;
+            double b2_2 = 1.000000000000000;
+            double a2_1 = -1.976990384140972;
+            double a2_2 = 0.977147671441705;
+            
+            double x2_1 = 0, x2_2 = 0, y2_1 = 0, y2_2 = 0;
+            
+            for (int j = 0; j < filteredData.Count; j++)
+            {
+                double x2 = filteredData[j];
+                double y2 = b2_0 * x2 + b2_1 * x2_1 + b2_2 * x2_2
+                             - a2_1 * y2_1 - a2_2 * y2_2;
+                
+                x2_2 = x2_1;
+                x2_1 = x2;
+                y2_2 = y2_1;
+                y2_1 = y2;
+                
+                filteredData[j] = y2;
+            }
+            
+            // Biquad Section 3 - 第四个二阶段
+            double b3_0 = 1.000000000000000;
+            double b3_1 = -2.000000000000000;
+            double b3_2 = 1.000000000000000;
+            double a3_1 = -1.990972238666920;
+            double a3_2 = 0.991119531555879;
+            
+            double x3_1 = 0, x3_2 = 0, y3_1 = 0, y3_2 = 0;
+            
+            for (int j = 0; j < filteredData.Count; j++)
+            {
+                double x3 = filteredData[j];
+                double y3 = b3_0 * x3 + b3_1 * x3_1 + b3_2 * x3_2
+                             - a3_1 * y3_1 - a3_2 * y3_2;
+                
+                x3_2 = x3_1;
+                x3_1 = x3;
+                y3_2 = y3_1;
+                y3_1 = y3;
+                
+                filteredData[j] = y3;
             }
             
             return filteredData;

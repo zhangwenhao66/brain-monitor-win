@@ -62,23 +62,22 @@ namespace BrainMirror.Services
         
         private void InitializeEDFParameters()
         {
-            // 设置EDF文件参数 - 匹配示例文件格式
+            // 设置EDF文件参数 - 匹配示例文件格式（EDF+C格式）
             numberOfDataRecords = -1; // 动态记录数，稍后更新
-            dataRecordDuration = 0.01; // 每个数据记录10ms，匹配dataRecordTimer的间隔
-            numberOfSignals = 1; // 1个信号通道（脑电信号）
+            dataRecordDuration = 1.0; // 每个数据记录1秒
+            numberOfSignals = 2; // 2个信号通道（脑电信号 + EDF Annotations）
             
-            // 信号参数 - 每个样本就是一个记录，不批量处理
-            // 这样保存的数据点数就和CSV文件完全一致
-            samplesPerDataRecord = new int[] { 1 }; // 每个记录只有1个样本
-            signalLabels = new string[] { "FP1" }; // 匹配示例文件
-            transducerTypes = new string[] { "EDF Annotations" }; // 匹配示例文件
-            physicalDimensions = new string[] { "uV" };
-            physicalMinimums = new double[] { -3000.0 }; // 匹配示例文件
-            physicalMaximums = new double[] { 3000.0 }; // 匹配示例文件
-            digitalMinimums = new int[] { -32767 }; // 匹配示例文件
-            digitalMaximums = new int[] { 32767 }; // 匹配示例文件
-            prefilterings = new string[] { "HP:0.5Hz LP:30Hz" };
-            numberOfSamplesInDataRecord = new int[] { 1 };
+            // 信号参数 - 520Hz采样率，每秒520个样本
+            samplesPerDataRecord = new int[] { 520, 60 }; // FP1: 520样本/秒, Annotations: 60样本/秒
+            signalLabels = new string[] { "FP1", "EDF Annotations" };
+            transducerTypes = new string[] { "", "" }; // 传感器类型为空
+            physicalDimensions = new string[] { "uV", "" }; // FP1用uV，Annotations为空
+            physicalMinimums = new double[] { -900.0, -1.0 }; // 匹配原软件
+            physicalMaximums = new double[] { 899.0, 1.0 }; // 匹配原软件
+            digitalMinimums = new int[] { -4096, -32768 }; // 匹配原软件
+            digitalMaximums = new int[] { 4095, 32767 }; // 匹配原软件
+            prefilterings = new string[] { "", "" }; // 预滤波为空
+            numberOfSamplesInDataRecord = new int[] { 520, 60 };
         }
         
         /// <summary>
@@ -88,16 +87,19 @@ namespace BrainMirror.Services
         {
             if (isHeaderWritten) return;
             
+            // 计算头部字节数：256（固定头）+ 256 * 信号数量
+            int headerBytes = 256 + 256 * numberOfSignals;
+            
             // 写入固定长度头信息 - 按照EDF格式规范
             WriteFixedLengthString("0", 8); // 版本
             WriteFixedLengthString(patientId, 80); // 患者ID
             WriteFixedLengthString(recordingId, 80); // 记录ID
             WriteFixedLengthString(startDate.ToString("dd.MM.yy"), 8); // 开始日期
             WriteFixedLengthString(startDate.ToString("HH.mm.ss"), 8); // 开始时间
-            WriteFixedLengthString("256", 8); // 头记录字节数
-            WriteFixedLengthString("", 44); // 保留字段
+            WriteFixedLengthString(headerBytes.ToString(), 8); // 头记录字节数（正确计算）
+            WriteFixedLengthString("EDF+C", 44); // 保留字段 - 标记为EDF+C格式（连续记录）
             WriteFixedLengthString(numberOfDataRecords.ToString(), 8); // 数据记录数
-            WriteFixedLengthString(dataRecordDuration.ToString("F6"), 8); // 数据记录持续时间
+            WriteFixedLengthString(dataRecordDuration.ToString("F0"), 8); // 数据记录持续时间（1秒）
             WriteFixedLengthString(numberOfSignals.ToString(), 4); // 信号数
             
             // 写入信号参数
@@ -140,19 +142,14 @@ namespace BrainMirror.Services
                 WriteHeader();
             }
             
-            // 直接将样本写入文件，不进行缓冲
-            // 每个样本作为一个完整的EDF记录写入（因为samplesPerDataRecord[0] = 1）
-            double physicalValue = Math.Max(physicalMinimums[0], Math.Min(physicalMaximums[0], sample));
-            double normalizedValue = (physicalValue - physicalMinimums[0]) / (physicalMaximums[0] - physicalMinimums[0]);
-            int digitalValue = (int)(digitalMinimums[0] + normalizedValue * (digitalMaximums[0] - digitalMinimums[0]));
+            // 将样本添加到缓冲区
+            signalBuffers[0].Add(sample);
             
-            // 确保值在有效范围内
-            digitalValue = Math.Max(digitalMinimums[0], Math.Min(digitalMaximums[0], digitalValue));
-            
-            // 写入16位整数（小端序）
-            writer.Write((short)digitalValue);
-            
-            currentDataRecord++;
+            // 当缓冲区达到一个数据记录的样本数时，写入数据记录
+            if (signalBuffers[0].Count >= samplesPerDataRecord[0])
+            {
+                WriteDataRecord();
+            }
         }
         
         /// <summary>
@@ -162,10 +159,8 @@ namespace BrainMirror.Services
         {
             if (signalBuffers[0].Count < samplesPerDataRecord[0]) return;
             
-            // 获取要写入的样本
+            // 写入第一个信号（FP1脑电数据）的样本
             var samplesToWrite = signalBuffers[0].GetRange(0, samplesPerDataRecord[0]);
-            
-            // 转换为16位整数
             foreach (var sample in samplesToWrite)
             {
                 // 将物理值转换为数字值
@@ -183,7 +178,53 @@ namespace BrainMirror.Services
             // 移除已写入的样本
             signalBuffers[0].RemoveRange(0, samplesPerDataRecord[0]);
             
+            // 写入第二个信号（EDF Annotations）
+            // EDF Annotations格式：时间标记 + 持续时间（可选）+ 标注（可选）
+            // 对于连续记录，我们写入时间标记
+            WriteEDFAnnotations(currentDataRecord * dataRecordDuration);
+            
             currentDataRecord++;
+        }
+        
+        /// <summary>
+        /// 写入EDF Annotations数据
+        /// </summary>
+        /// <param name="timeOffset">时间偏移（秒）</param>
+        private void WriteEDFAnnotations(double timeOffset)
+        {
+            // EDF Annotations使用TAL（Time-stamped Annotations List）格式
+            // 格式："+时间\x14持续时间\x14标注\x14\x00"
+            // 对于记录开始标记："+0\x14\x14\x00" 或 "+时间\x14Recording starts\x14\x00"
+            
+            string annotation;
+            if (currentDataRecord == 0)
+            {
+                // 第一个记录：标记记录开始
+                annotation = $"+{timeOffset:F1}\x14\x14Recording starts\x14\x00";
+            }
+            else
+            {
+                // 其他记录：只写时间戳
+                annotation = $"+{timeOffset:F1}\x14\x14\x14\x00";
+            }
+            
+            // 将标注转换为字节并填充到60个样本（120字节，因为每个样本是2字节）
+            byte[] annotationBytes = Encoding.UTF8.GetBytes(annotation);
+            
+            // 写入标注数据，每个样本2字节，共60个样本 = 120字节
+            int bytesWritten = 0;
+            for (int i = 0; i < annotationBytes.Length && bytesWritten < 120; i++)
+            {
+                writer.Write((short)annotationBytes[i]);
+                bytesWritten += 2;
+            }
+            
+            // 填充剩余字节为0
+            while (bytesWritten < 120)
+            {
+                writer.Write((short)0);
+                bytesWritten += 2;
+            }
         }
         
         /// <summary>
@@ -204,6 +245,17 @@ namespace BrainMirror.Services
         public void Finish()
         {
             if (isDisposed) return;
+            
+            // 写入剩余的样本（如果有）
+            if (signalBuffers[0].Count > 0)
+            {
+                // 填充到完整的数据记录
+                while (signalBuffers[0].Count < samplesPerDataRecord[0])
+                {
+                    signalBuffers[0].Add(0); // 用0填充
+                }
+                WriteDataRecord();
+            }
             
             // 更新头中的记录数
             if (currentDataRecord > 0)
